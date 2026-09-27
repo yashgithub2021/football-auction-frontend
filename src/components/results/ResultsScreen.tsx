@@ -29,7 +29,6 @@ const POSITION_GROUP_LABELS = [
 
 const OUTCOME_STYLE: Record<LotHistoryEntry["outcome"], string> = {
   SOLD: "bg-lime-300 text-emerald-950",
-  AUTO_AWARDED: "bg-sky-300 text-sky-950",
   UNSOLD: "bg-white/15 text-white",
   INTERRUPTED: "border border-amber-300/70 text-amber-100",
 };
@@ -40,7 +39,10 @@ function plural(count: number, one: string, many = `${one}s`): string {
   return `${count} ${count === 1 ? one : many}`;
 }
 
-function summaryText({ endReason, statistics }: GameResults): string {
+function summaryText({ endReason, statistics, managers }: GameResults): string {
+  if (endReason === "COMPLETED" && !managers.every((manager) => manager.complete)) {
+    return `Every player has been auctioned after ${plural(statistics.lotsCompleted, "lot")}. Some squads still have open slots.`;
+  }
   return endReason === "COMPLETED"
     ? `Every squad is full after ${plural(statistics.lotsCompleted, "lot")}.`
     : `The host ended the auction before every squad was full, after ${plural(statistics.lotsCompleted, "completed lot")}.`;
@@ -51,7 +53,6 @@ function Statistics({ statistics }: { statistics: AuctionStatistics }) {
   const items: Array<[string, string]> = [
     ["Lots completed", String(statistics.lotsCompleted)],
     ["Sold", String(statistics.playersSold)],
-    ["Auto-awarded", String(statistics.playersAutoAwarded)],
     ["Unsold", String(statistics.playersUnsold)],
     ...(statistics.lotsInterrupted > 0 ? ([["Interrupted", String(statistics.lotsInterrupted)]] as Array<[string, string]>) : []),
     ["Bids placed", String(statistics.totalBids)],
@@ -125,9 +126,6 @@ function TeamCard({ manager, isViewer }: { manager: ManagerResult; isViewer: boo
               <span className="flex min-w-0 items-center gap-2">
                 <span className="w-11 shrink-0 rounded bg-lime-300 px-1 text-center text-xs font-black text-emerald-950">{player.primaryPosition}</span>
                 <span className="min-w-0 truncate font-bold">{player.name}</span>
-                {player.acquiredBy === "AUTO_AWARDED" && (
-                  <span className="shrink-0 rounded-full bg-sky-300/20 px-2 text-xs font-bold text-sky-100">Auto-awarded</span>
-                )}
               </span>
               <span className="shrink-0 font-black tabular-nums">{formatMoney(player.price)}</span>
             </li>

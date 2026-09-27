@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { SessionSnapshot } from "@protocol";
 import type { ConnectionStatus } from "@/lib/socket/transport";
 import { VIEWER_LABEL, viewerKind } from "@/state/room/viewer";
@@ -36,9 +37,11 @@ interface RoomHeaderProps {
   session: SessionSnapshot | null;
   connection: ConnectionStatus;
   resuming: boolean;
+  /** Host-only controls shown right after the connection indicator (during the game). */
+  hostControls?: ReactNode;
 }
 
-export function RoomHeader({ roomId, name, session, connection, resuming }: RoomHeaderProps) {
+export function RoomHeader({ roomId, name, session, connection, resuming, hostControls = null }: RoomHeaderProps) {
   return (
     <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
       <div className="flex min-w-0 items-baseline gap-3">
@@ -55,6 +58,7 @@ export function RoomHeader({ roomId, name, session, connection, resuming }: Room
           </span>
         )}
         <ConnectionIndicator status={connection} resuming={resuming} />
+        {hostControls}
       </div>
     </header>
   );

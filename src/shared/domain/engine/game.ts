@@ -1,8 +1,8 @@
 // GENERATED from backend/src/domain/engine/game.ts by scripts/sync-shared.mjs. Do not edit: change the backend, then run `npm run sync:shared`.
 import { MAX_TICK_ITERATIONS } from "../constants";
-import type { Auction, AuctionResult, Game, GameStatus, RandomFn } from "../types";
-import { awardPlayer, drawPlayer, enterReveal, finalizeAuction, startAuction } from "./auction";
-import { getActiveManagers, isManagerActive } from "./bidding";
+import type { Game, GameStatus, RandomFn } from "../types";
+import { finalizeAuction, startAuction } from "./auction";
+import { isManagerActive } from "./bidding";
 
 const TERMINAL_STATUSES: ReadonlySet<GameStatus> = new Set(["GAME_COMPLETE", "ENDED_EARLY"]);
 const ENDABLE_STATUSES: ReadonlySet<GameStatus> = new Set(["AUCTION_ACTIVE", "PAUSED", "PLAYER_SOLD"]);
@@ -13,6 +13,20 @@ const ENDABLE_STATUSES: ReadonlySet<GameStatus> = new Set(["AUCTION_ACTIVE", "PA
 
 export function areAllSquadsFull(game: Game): boolean {
   return game.managers.every((manager) => !isManagerActive(manager, game.settings));
+}
+
+/** No player is left to put up for auction. */
+export function isPoolExhausted(game: Game): boolean {
+  return game.availablePlayerIds.length === 0;
+}
+
+/**
+ * The auction has nothing left to do: every squad is full, or every player
+ * has been auctioned. Squads may be incomplete in the second case; players
+ * are only ever acquired by winning a bid.
+ */
+export function isAuctionFinished(game: Game): boolean {
+  return areAllSquadsFull(game) || isPoolExhausted(game);
 }
 
 export function isGameOver(game: Game): boolean {
@@ -27,63 +41,27 @@ export function canEndGame(game: Game): boolean {
 // Transitions
 // ---------------------------------------------------------------------------
 
-/** Marks the game complete. Throws if any squad still has open slots. */
+/**
+ * Marks the game complete. Throws unless every squad is full or the pool is
+ * exhausted (squads may then be incomplete).
+ */
 export function completeGame(game: Game): Game {
-  if (!areAllSquadsFull(game)) {
-    throw new Error("Cannot complete the game while squads still have open slots.");
+  if (!isAuctionFinished(game)) {
+    throw new Error("Cannot complete the game while squads have open slots and players remain.");
   }
   return { ...game, status: "GAME_COMPLETE", currentAuction: null };
 }
 
 /**
- * Last-active-manager rule: draws a random player and awards them straight to
- * the given manager at the minimum bid, then shows the usual reveal.
- */
-function autoAwardToManager(game: Game, managerId: string, now: number, random: RandomFn): Game {
-  const { playerId, availablePlayerIds, lotNumber } = drawPlayer(game, random);
-  const amount = game.settings.minimumBid;
-  const lot: Auction = {
-    lotNumber,
-    playerId,
-    currentBid: amount,
-    highestBidderId: managerId,
-    endsAt: now,
-    pausedRemainingMs: null,
-    revealEndsAt: null,
-    bids: [],
-  };
-  const result: AuctionResult = {
-    lotNumber,
-    playerId,
-    managerId,
-    amount,
-    outcome: "AUTO_AWARDED",
-    completedAt: now,
-    bids: [],
-  };
-  const next: Game = {
-    ...game,
-    availablePlayerIds,
-    lotCounter: lotNumber,
-    managers: awardPlayer(game.managers, managerId, playerId, amount),
-  };
-  return enterReveal(next, lot, result, now);
-}
-
-/**
  * Moves to the next stage after a reveal (or at game start):
- *   all squads full   → GAME_COMPLETE
- *   one active manager → auto-award a random player to them
- *   otherwise          → start the next random auction
+ *   every squad full, or no player left → GAME_COMPLETE
+ *   otherwise                           → start the next random auction
+ * Even with a single manager left with open slots, the next player goes up
+ * for a normal auction: nobody ever receives a player without winning a bid.
  */
 export function advanceGame(game: Game, now: number, random: RandomFn): Game {
-  if (areAllSquadsFull(game)) {
+  if (isAuctionFinished(game)) {
     return completeGame(game);
-  }
-  const active = getActiveManagers(game.managers, game.settings);
-  const onlyManager = active.length === 1 ? active[0] : undefined;
-  if (onlyManager !== undefined) {
-    return autoAwardToManager(game, onlyManager.id, now, random);
   }
   return startAuction(game, now, random);
 }
@@ -111,7 +89,7 @@ export function tick(game: Game, now: number, random: RandomFn): Game {
   for (let iteration = 0; iteration < MAX_TICK_ITERATIONS; iteration += 1) {
     const auction = current.currentAuction;
     if (current.status === "AUCTION_ACTIVE" && auction !== null && now >= auction.endsAt) {
-      current = finalizeAuction(current, auction.endsAt, random);
+      current = finalizeAuction(current, auction.endsAt);
       continue;
     }
     if (

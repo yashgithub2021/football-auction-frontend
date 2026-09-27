@@ -1,7 +1,7 @@
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { GameResults, PublicRoomSnapshot } from "@protocol";
+import type { GameResults, ManagerResult, PublicRoomSnapshot } from "@protocol";
 import { createMemoryTokenStore, type TokenStore } from "@/lib/session/tokenStore";
 import { RoomClient } from "@/state/room/roomClient";
 import { RoomClientProvider } from "@/state/room/RoomClientProvider";
@@ -50,67 +50,82 @@ function results(snapshot: PublicRoomSnapshot): GameResults {
 
 const team = (name: string) => screen.getByRole("region", { name });
 
-/** Hand-written results, so the copied text can be checked exactly. */
-const SAMPLE: GameResults = {
-  endReason: "COMPLETED",
-  settings: { startingBudget: 20, teamSize: 2, minimumBid: 1, bidIncrement: 1, auctionTimerMs: 3000 },
-  statistics: { lotsCompleted: 4, playersSold: 3, playersAutoAwarded: 1, playersUnsold: 0, lotsInterrupted: 0, totalBids: 5, totalSpent: 16, averagePrice: 4, highestSale: { lotNumber: 1, playerName: "Player A", managerName: "Yash", amount: 5 } },
-  managers: [
-    {
-      managerId: "manager-1", name: "Yash", startingBudget: 20, spent: 10, budgetRemaining: 10, squadSize: 2, teamSize: 2, openSlots: 0, complete: true,
-      players: [
-        { playerId: "player-a", name: "Player A", primaryPosition: "ST", positionGroup: "ATT", nationality: "X", price: 5, acquiredBy: "SOLD", lotNumber: 1 },
-        { playerId: "player-b", name: "Player B", primaryPosition: "GK", positionGroup: "GK", nationality: "X", price: 5, acquiredBy: "SOLD", lotNumber: 2 },
-      ],
-      positionCounts: { GK: 1, DEF: 0, MID: 0, ATT: 1 },
-      averageRatings: { attacking: 3, creativity: 2.5, defending: 2, physical: 4, technical: 4, sixAsideFit: 4.5, goalkeeping: 3 },
-    },
-    {
-      managerId: "manager-2", name: "Viraj", startingBudget: 20, spent: 6, budgetRemaining: 14, squadSize: 2, teamSize: 2, openSlots: 0, complete: true,
-      players: [
-        { playerId: "player-c", name: "Player C", primaryPosition: "CM", positionGroup: "MID", nationality: "X", price: 5, acquiredBy: "SOLD", lotNumber: 3 },
-        { playerId: "player-d", name: "Player D", primaryPosition: "CB", positionGroup: "DEF", nationality: "X", price: 1, acquiredBy: "AUTO_AWARDED", lotNumber: 4 },
-      ],
-      positionCounts: { GK: 0, DEF: 1, MID: 1, ATT: 0 },
-      averageRatings: { attacking: 3, creativity: 4, defending: 4, physical: 3, technical: 4, sixAsideFit: 4, goalkeeping: 1 },
-    },
-  ],
-  lots: [],
-};
+/** A manager result with the given players, priced and positioned so the text can prove it leaves those out. */
+function manager(index: number, name: string, playerNames: readonly string[]): ManagerResult {
+  const positions = ["ST", "GK", "CM", "CB", "LW", "RB"] as const;
+  const players = playerNames.map((playerName, i) => {
+    const primaryPosition = positions[i % positions.length] ?? "ST";
+    return { playerId: `id-${name}-${i}`, name: playerName, primaryPosition, positionGroup: "ATT" as const, nationality: "X", price: 7 + i, lotNumber: index * 10 + i };
+  });
+  const spent = players.reduce((sum, p) => sum + p.price, 0);
+  return {
+    managerId: `manager-${index}`, name, startingBudget: 100, spent, budgetRemaining: 100 - spent, squadSize: players.length, teamSize: 6,
+    openSlots: 6 - players.length, complete: players.length === 6, players,
+    positionCounts: { GK: 0, DEF: 0, MID: 0, ATT: players.length },
+    averageRatings: players.length === 0 ? null : { attacking: 3, creativity: 2.5, defending: 2, physical: 4, technical: 4, sixAsideFit: 4.5, goalkeeping: 3 },
+  };
+}
+
+function sampleResults(managers: readonly ManagerResult[], endReason: GameResults["endReason"] = "COMPLETED"): GameResults {
+  return {
+    endReason,
+    settings: { startingBudget: 100, teamSize: 6, minimumBid: 1, bidIncrement: 1, auctionTimerMs: 3000 },
+    statistics: { lotsCompleted: 12, playersSold: 12, playersUnsold: 0, lotsInterrupted: 0, totalBids: 30, totalSpent: 114, averagePrice: 9.5, highestSale: { lotNumber: 1, playerName: "Messi", managerName: "Yash", amount: 12 } },
+    managers,
+    lots: [],
+  };
+}
+
+const YASH_PLAYERS = ["Messi", "Ronaldo", "Xavi", "Maldini", "Ronaldo Nazario", "Buffon"];
+const NIRBHAY_PLAYERS = ["Pele", "Maradona", "Zidane", "Iniesta", "Cafu", "Neuer"];
 
 describe("formatResultsText", () => {
-  it("produces the plain-text summary: teams with prices, then remaining budgets", () => {
-    expect(formatResultsText(SAMPLE)).toBe(
-      [
-        "Football Auction: auction complete",
-        "",
-        "Team Yash",
-        "- Player A — $5",
-        "- Player B — $5",
-        "",
-        "Team Viraj",
-        "- Player C — $5",
-        "- Player D — $1",
-        "",
-        "Remaining Budget:",
-        "Yash — $10",
-        "Viraj — $14",
-      ].join("\n"),
+  it("is exactly: team name, its players one per line, a blank line between teams", () => {
+    const text = formatResultsText(sampleResults([manager(1, "Yash", YASH_PLAYERS), manager(2, "Nirbhay", NIRBHAY_PLAYERS)]));
+    expect(text).toBe(
+      "Team Yash\nMessi\nRonaldo\nXavi\nMaldini\nRonaldo Nazario\nBuffon\n\nTeam Nirbhay\nPele\nMaradona\nZidane\nIniesta\nCafu\nNeuer",
     );
   });
 
-  it("says when the auction ended early, lists empty teams, and never includes internal ids", () => {
+  it("follows the server's team order and each team's purchase order", () => {
+    const text = formatResultsText(sampleResults([manager(2, "Nirbhay", ["Cafu", "Pele"]), manager(1, "Yash", ["Xavi", "Messi"])]));
+    expect(text).toBe("Team Nirbhay\nCafu\nPele\n\nTeam Yash\nXavi\nMessi");
+  });
+
+  it("contains nothing else: no prices, positions, budgets, bullets, numbering, headings or markdown", () => {
+    const results = sampleResults([manager(1, "Yash", YASH_PLAYERS), manager(2, "Nirbhay", NIRBHAY_PLAYERS)], "ENDED_EARLY");
+    const text = formatResultsText(results);
+    const allowed = new Set(["", "Team Yash", "Team Nirbhay", ...YASH_PLAYERS, ...NIRBHAY_PLAYERS]);
+    for (const line of text.split("\n")) expect(allowed.has(line), `unexpected line "${line}"`).toBe(true);
+    expect(text).not.toMatch(/\$|\d/); // no prices, budgets, numbering or stats
+    expect(text).not.toMatch(/\b(ST|GK|CM|CB|LW|RB|ATT|DEF|MID)\b/); // no positions
+    expect(text).not.toMatch(/^\s*([-*•#>]|\d+\.)/m); // no bullets, numbering or markdown blocks
+    expect(text).not.toMatch(/[*_`#<>|[\]]/); // no markdown or markup characters
+    expect(text).not.toMatch(/Football Auction|Results|complete|ended|Remaining|Budget|winner|best|rank/i);
+    expect(text).toBe(text.trim()); // no leading or trailing blank lines
+    expect(text).not.toMatch(/\n\n\n/); // exactly one blank line between teams
+  });
+
+  it("writes a team without players as just its name line, and never includes internal ids", () => {
     const snapshot = finishedSnapshot({ ending: "ENDED_EARLY" });
-    const text = formatResultsText(results(snapshot));
-    expect(text.split("\n")[0]).toBe("Football Auction: auction ended early");
-    expect(text).toContain("Team Yash\n- No players");
+    const final = results(snapshot);
+    const [yash, viraj, vineet] = final.managers;
+    expect(formatResultsText(final)).toBe(
+      [
+        "Team Yash", // bought nobody
+        "",
+        ["Team Viraj", ...(viraj?.players.map((p) => p.name) ?? [])].join("\n"),
+        "",
+        "Team Vineet",
+      ].join("\n"),
+    );
+    expect(yash?.players).toEqual([]);
+    expect(vineet?.players).toEqual([]);
+    const text = formatResultsText(final);
     for (const id of [...Object.values(IDS), "manager-1", "manager-2", "manager-3", ROOM_ID, TOKEN]) {
       expect(text).not.toContain(id);
     }
-    for (const manager of results(snapshot).managers) {
-      for (const player of manager.players) expect(text).not.toContain(player.playerId);
-    }
-    expect(text).not.toMatch(/[<>*#`]/); // no markup
+    for (const m of final.managers) for (const player of m.players) expect(text).not.toContain(player.playerId);
   });
 });
 
@@ -122,7 +137,7 @@ describe("results screen: completed auction", () => {
     await openResultsAs(IDS.viraj, snapshot);
     expect(screen.getByRole("heading", { level: 1, name: "Auction complete" })).toBeTruthy();
     expect(screen.getByText("Completed")).toBeTruthy();
-    expect(screen.getByText("Every squad is full after 3 lots.")).toBeTruthy();
+    expect(screen.getByText("Every squad is full after 4 lots.")).toBeTruthy();
     expect(document.querySelector("[data-view=results]")?.getAttribute("data-end-reason")).toBe("COMPLETED");
   });
 
@@ -142,8 +157,8 @@ describe("results screen: completed auction", () => {
       expect(row.textContent).toContain(player.name);
       expect(row.textContent).toContain(`$${player.price}`);
     }
-    expect(within(team("Yash")).getByText("Auto-awarded")).toBeTruthy();
-    expect(within(team("Viraj")).queryByText("Auto-awarded")).toBeNull();
+    // Nobody's player was handed out: there is no auto-award anywhere on the page.
+    expect(screen.queryByText(/auto-award/i)).toBeNull();
   });
 
   it("shows squad composition and game-rating averages, clearly labelled as game ratings", async () => {
@@ -167,11 +182,11 @@ describe("results screen: completed auction", () => {
     await openResultsAs(IDS.viraj, snapshot);
     const stats = screen.getByRole("region", { name: "Auction statistics" });
     const value = (label: string) => within(stats).getByText(label).nextSibling?.textContent;
-    expect(value("Lots completed")).toBe("3");
-    expect(value("Sold")).toBe("2");
-    expect(value("Auto-awarded")).toBe("1");
-    expect(value("Unsold")).toBe("0");
-    expect(value("Bids placed")).toBe("4");
+    expect(value("Lots completed")).toBe("4");
+    expect(value("Sold")).toBe("3");
+    expect(value("Unsold")).toBe("1");
+    expect(within(stats).queryByText("Auto-awarded")).toBeNull();
+    expect(value("Bids placed")).toBe("5");
     expect(value("Total spent")).toBe("$6");
     expect(value("Average price")).toBe("$2");
     expect(within(stats).queryByText("Interrupted")).toBeNull();
@@ -182,15 +197,28 @@ describe("results screen: completed auction", () => {
     const user = await openResultsAs(IDS.viraj, snapshot);
     const history = screen.getByRole("region", { name: "Auction history" });
     const lots = within(history).getAllByRole("listitem", { name: /^Lot \d+$/ });
-    expect(lots.map((lot) => lot.getAttribute("aria-label"))).toEqual(["Lot 1", "Lot 2", "Lot 3"]);
+    expect(lots.map((lot) => lot.getAttribute("aria-label"))).toEqual(["Lot 1", "Lot 2", "Lot 3", "Lot 4"]);
     expect(lots[0]?.textContent).toContain("Sold to Viraj for $3");
-    expect(lots[1]?.textContent).toContain("Sold to Vineet for $2");
-    expect(lots[2]?.textContent).toContain("Auto-awarded to Yash for $1");
+    expect(lots[2]?.textContent).toContain("Sold to Vineet for $2");
+    expect(lots[3]?.textContent).toContain("Sold to Yash for $1");
     const first = lots[0];
     if (first === undefined) throw new Error("no lot 1");
     await user.click(within(first).getByText("3 bids"));
     expect(within(first).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["Viraj $1", "Vineet $2", "Viraj $3"]);
-    expect(within(lots[2] as HTMLElement).queryByText(/bids?$/)).toBeNull();
+    await user.click(within(lots[3] as HTMLElement).getByText("1 bid"));
+    expect(within(lots[3] as HTMLElement).getByText("Yash $1")).toBeTruthy();
+  });
+
+  it("shows a no-bid player as unsold, owned by nobody", async () => {
+    await openResultsAs(IDS.viraj, snapshot);
+    const unsold = final.lots[1];
+    if (unsold === undefined) throw new Error("fixture: no lot 2");
+    const lot = within(screen.getByRole("region", { name: "Auction history" })).getByRole("listitem", { name: "Lot 2" });
+    expect(within(lot).getByText("Unsold")).toBeTruthy();
+    expect(lot.textContent).toContain(unsold.playerName);
+    expect(lot.textContent).toContain("No bids, went unsold");
+    expect(within(lot).queryByText(/bids?$/)).toBeNull();
+    for (const card of screen.getAllByTestId("team-card")) expect(card.textContent).not.toContain(unsold.playerName);
   });
 
   it("marks the viewer's own team and puts it first on phones", async () => {
@@ -257,8 +285,12 @@ describe("copy results", () => {
     await user.click(screen.getByRole("button", { name: "Copy results" }));
     await waitFor(() => expect(screen.getByText("Results copied. Paste them anywhere.")).toBeTruthy());
     expect(screen.getByRole("button", { name: "Copied" })).toBeTruthy();
-    expect(await navigator.clipboard.readText()).toBe(formatResultsText(results(snapshot)));
-    expect(screen.getByTestId("results-text").textContent).toBe(formatResultsText(results(snapshot)));
+    // Exactly the teams in server order, each followed by its players, nothing more.
+    const [yash, viraj, vineet] = results(snapshot).managers.map((m) => m.players.map((p) => p.name));
+    const expected = `Team Yash\n${yash?.join("\n")}\n\nTeam Viraj\n${viraj?.join("\n")}\n\nTeam Vineet\n${vineet?.join("\n")}`;
+    expect(await navigator.clipboard.readText()).toBe(expected);
+    expect(formatResultsText(results(snapshot))).toBe(expected);
+    expect(screen.getByTestId("results-text").textContent).toBe(expected);
   });
 
   it("says so when copying isn't possible, pointing to the text version", async () => {

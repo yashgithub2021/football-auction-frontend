@@ -410,3 +410,88 @@ describe("auction: board view", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Auction complete" })).toBeTruthy();
   });
 });
+
+describe("host controls in the header", () => {
+  const headerControls = () => {
+    const header = document.querySelector("header");
+    if (header === null) throw new Error("no header");
+    return within(header).getByRole("region", { name: "Host controls" });
+  };
+
+  it("sit right after the Live indicator as icon buttons, for both the playing and the auctioneer host", async () => {
+    for (const hostPlaying of [true, false]) {
+      await openRoomAs(IDS.host, gameSnapshot({ hostPlaying }));
+      const controls = headerControls();
+      expect(screen.getByTestId("connection-indicator").nextElementSibling).toBe(controls);
+      for (const name of ["Pause", "End game"]) {
+        const button = within(controls).getByRole("button", { name });
+        expect(button.textContent).toBe(""); // icon only; the name is the aria-label
+        expect(button.querySelector("svg")).toBeTruthy();
+        expect(button.getAttribute("title")).toBeTruthy();
+      }
+      // No separate controls panel in the page body any more.
+      expect(screen.getAllByRole("region", { name: "Host controls" })).toHaveLength(1);
+      expect(screen.queryByRole("heading", { name: "Host controls" })).toBeNull();
+      cleanup();
+      transport = new FakeTransport();
+      tokens = createMemoryTokenStore();
+      client = new RoomClient({ transport, tokens, now: () => localNow, clockPingIntervalMs: 0 });
+    }
+  });
+
+  it("pause sends the intent; a paused game shows the resume icon instead", async () => {
+    const user = await openRoomAs(IDS.host, gameSnapshot());
+    await user.click(within(headerControls()).getByRole("button", { name: "Pause" }));
+    expect(transport.lastSent("game:pause")).toBeDefined();
+    transport.pushSnapshot(gameSnapshot({ version: 11, paused: true }));
+    const resume = await within(headerControls()).findByRole("button", { name: "Resume" });
+    expect(within(headerControls()).queryByRole("button", { name: "Pause" })).toBeNull();
+    await user.click(resume);
+    expect(transport.lastSent("game:resume")).toBeDefined();
+  });
+
+  it("the end icon asks first, then ends the game for everyone", async () => {
+    const user = await openRoomAs(IDS.host, gameSnapshot());
+    await user.click(within(headerControls()).getByRole("button", { name: "End game" }));
+    expect(transport.lastSent("game:end")).toBeUndefined();
+    const confirm = within(headerControls()).getByRole("group", { name: "Confirm end game" });
+    expect(confirm.textContent).toContain("End for everyone?");
+    await user.click(within(confirm).getByRole("button", { name: "Keep playing" }));
+    expect(within(headerControls()).queryByRole("group", { name: "Confirm end game" })).toBeNull();
+    await user.click(within(headerControls()).getByRole("button", { name: "End game" }));
+    await user.click(within(headerControls()).getByRole("button", { name: "Confirm end game" }));
+    expect(transport.lastSent("game:end")).toBeDefined();
+  });
+
+  it("shows the server's reason when a control is refused", async () => {
+    const user = await openRoomAs(IDS.host, gameSnapshot(), (event, payload) =>
+      event === "game:pause" ? rejected(payload, "GAME_ACTION_REJECTED", "PAUSE is not allowed while the game is PLAYER_SOLD.") : ok(payload, {}),
+    );
+    await user.click(within(headerControls()).getByRole("button", { name: "Pause" }));
+    expect((await within(headerControls()).findByRole("alert")).textContent).toMatch(/not allowed/);
+  });
+
+  it("look unavailable and send nothing while offline", async () => {
+    const user = await openRoomAs(IDS.host, gameSnapshot());
+    act(() => transport.setStatus("RECONNECTING"));
+    const pause = within(headerControls()).getByRole("button", { name: "Pause" });
+    const end = within(headerControls()).getByRole("button", { name: "End game" });
+    expect(pause.getAttribute("aria-disabled")).toBe("true");
+    expect(end.getAttribute("aria-disabled")).toBe("true");
+    await user.click(pause);
+    await user.click(end);
+    expect(transport.eventsSent()).not.toContain("game:pause");
+    expect(within(headerControls()).queryByRole("group", { name: "Confirm end game" })).toBeNull();
+  });
+
+  it("are never shown to managers or spectators, nor outside the game", async () => {
+    await openRoomAs(IDS.viraj, gameSnapshot());
+    expect(screen.queryByRole("region", { name: "Host controls" })).toBeNull();
+    cleanup();
+    transport = new FakeTransport();
+    tokens = createMemoryTokenStore();
+    client = new RoomClient({ transport, tokens, now: () => localNow, clockPingIntervalMs: 0 });
+    await openRoomAs(IDS.host, lobbySnapshot());
+    expect(screen.queryByRole("region", { name: "Host controls" })).toBeNull();
+  });
+});

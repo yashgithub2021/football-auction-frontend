@@ -274,19 +274,22 @@ describe("AuctionScreen", () => {
     expect(screen.getByRole("alert").textContent).toMatch(/only pause while a player is up for auction/);
   });
 
-  it("renders the domain's last-manager auto-award, then the completion placeholder", () => {
+  it("gives the last manager with a slot a normal lot they must bid on, then the completion placeholder", () => {
     const { store } = renderAuction(readyGame({ names: ["Yash", "Viraj"], settings: { teamSize: 1 } }));
     fireEvent.click(within(panel("Yash")).getByRole("button", { name: "Yash: open at $1" }));
     advance(3000); // Yash's squad is now full
-    advance(REVEAL_DURATION_MS); // the domain auto-awards the next player to Viraj
+    advance(REVEAL_DURATION_MS); // a normal lot opens: nothing is handed to Viraj
 
-    const awarded = store.getSnapshot();
-    expect(awarded.lastResult).toMatchObject({ managerId: VIRAJ, amount: 1, outcome: "AUTO_AWARDED" });
-    const reveal = screen.getByRole("group", { name: "Auto-awarded" });
-    expect(within(reveal).getByText("Viraj")).toBeTruthy();
-    expect(within(reveal).getByText("$1")).toBeTruthy();
-    expect(within(panel("Viraj")).getByText("Squad complete")).toBeTruthy();
-    expect(within(panel("Viraj")).queryAllByRole("button")).toHaveLength(0);
+    const next = store.getSnapshot();
+    expect(next.status).toBe("AUCTION_ACTIVE");
+    expect(next.currentAuction).toMatchObject({ lotNumber: 2, currentBid: 0, highestBidderId: null });
+    expect(screen.queryByRole("group", { name: /Sold|Unsold/ })).toBeNull();
+    expect(stat(panel("Viraj"), "Budget")).toBe("$20");
+
+    fireEvent.click(within(panel("Viraj")).getByRole("button", { name: "Viraj: open at $1" }));
+    advance(3000);
+    expect(store.getSnapshot().lastResult).toMatchObject({ managerId: VIRAJ, amount: 1, outcome: "SOLD" });
+    expect(within(screen.getByRole("group", { name: "Sold" })).getByText("Viraj")).toBeTruthy();
 
     advance(REVEAL_DURATION_MS);
     expect(store.getSnapshot().status).toBe("GAME_COMPLETE");
@@ -294,15 +297,27 @@ describe("AuctionScreen", () => {
     expect(screen.getByText(/All 2 squads are full after 2 lots/)).toBeTruthy();
   });
 
-  it("renders the domain's tight-pool auto-award when a lot gets no bids", () => {
+  it("shows a no-bid lot in a tight pool as unsold, and never hands the player out", () => {
     const { store } = renderAuction(readyGame({ names: ["Yash", "Viraj"], settings: { teamSize: 1 }, poolSize: 2 }));
     advance(3000);
 
-    const result = store.getSnapshot().lastResult;
-    expect(result?.outcome).toBe("AUTO_AWARDED");
-    const winner = store.getSnapshot().managers.find((m) => m.id === result?.managerId);
-    const reveal = screen.getByRole("group", { name: "Auto-awarded" });
-    expect(within(reveal).getByText(winner?.name ?? "missing")).toBeTruthy();
+    const unsold = store.getSnapshot();
+    expect(unsold.lastResult).toMatchObject({ outcome: "UNSOLD", managerId: null, amount: 0 });
+    expect(screen.getByRole("group", { name: "Unsold" })).toBeTruthy();
+    expect(unsold.managers.map((m) => [m.budgetRemaining, m.playerIds.length])).toEqual([
+      [20, 0],
+      [20, 0],
+    ]);
+
+    // The last player goes unsold too; the pool is empty, so the game completes with open slots.
+    advance(REVEAL_DURATION_MS);
+    advance(3000);
+    advance(REVEAL_DURATION_MS);
+    const done = store.getSnapshot();
+    expect(done.status).toBe("GAME_COMPLETE");
+    expect(done.managers.every((m) => m.playerIds.length === 0 && m.budgetRemaining === 20)).toBe(true);
+    expect(screen.getByRole("heading", { level: 1, name: "Auction complete" })).toBeTruthy();
+    expect(screen.getByText(/Every player has been auctioned after 2 lots/)).toBeTruthy();
   });
 
   it("holds no copy of game state: changes made outside the UI render immediately", () => {

@@ -10,6 +10,7 @@
 
 import type { BidValidation, Game, GameSettings, RandomFn, SetupError } from "../domain/types";
 import type { GameResults } from "../results/types";
+import type { PlayerFilter } from "./playerFilter";
 
 // ---------------------------------------------------------------------------
 // Room state (internal: the server keeps this; clients only see snapshots)
@@ -71,6 +72,11 @@ export interface Room {
   countdown: Countdown | null;
   /** The domain Game, created when the countdown elapses. */
   game: Game | null;
+  /**
+   * Host's position filter for the remaining-players list, changed only
+   * while the auction is paused. Display only: the domain never reads it.
+   */
+  playerFilter: PlayerFilter;
 }
 
 // ---------------------------------------------------------------------------
@@ -102,7 +108,9 @@ export type ParticipantAction =
   | { type: "RESUME_AUCTION"; actorId: string }
   | { type: "END_GAME"; actorId: string }
   /** Host, after the game is over: back to the lobby with the same people and settings. */
-  | { type: "NEW_AUCTION"; actorId: string };
+  | { type: "NEW_AUCTION"; actorId: string }
+  /** Host, while the auction is paused: which positions the remaining-players list shows. */
+  | { type: "SET_PLAYER_FILTER"; actorId: string; filter: PlayerFilter };
 
 /** Joining and reconnecting identify the caller by session, since they may not have a participant yet. */
 export type SessionAction =
@@ -208,6 +216,8 @@ export interface PublicRoomSnapshot {
   settings: GameSettings;
   countdown: Countdown | null;
   game: Game | null;
+  /** The host's current remaining-players filter; the same for everyone. */
+  playerFilter: PlayerFilter;
   /**
    * Final results, built on the server from the authoritative game once it
    * is over (FINISHED, and still present if the room then closes). null

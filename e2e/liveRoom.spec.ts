@@ -136,9 +136,64 @@ test("8. only the host has host controls; pause and resume reach everyone", asyn
     await expect(device.page.getByRole("button", { name: "Pause" })).toHaveCount(0);
   }
   const controls = host.page.getByRole("region", { name: "Host controls" });
+  // They are icons in the header, right beside the host's name and "Live".
+  const header = host.page.locator("header");
+  await expect(header.getByRole("region", { name: "Host controls" })).toBeVisible();
+  await expect(header).toContainText("Yash");
+  const live = await header.getByTestId("connection-indicator").boundingBox();
+  for (const name of ["Pause", "End game"]) {
+    const icon = header.getByRole("button", { name, exact: true });
+    await expect(icon).toHaveText("");
+    await expectOnScreen(host.page, icon, MIN_TOUCH_TARGET);
+    const box = await icon.boundingBox();
+    expect(live !== null && box !== null && box.x > live.x && Math.abs(box.y + box.height / 2 - (live.y + live.height / 2)) < 12, `${name} beside Live`).toBe(true);
+  }
+  await expect(host.page.getByRole("heading", { name: "Host controls" })).toHaveCount(0);
+  await expect(host.page.getByRole("region", { name: "Remaining players" })).toHaveCount(0); // only while paused
   await controls.getByRole("button", { name: "Pause" }).click();
   for (const device of [viraj, vineet]) await expect(device.page.getByText("Bidding is frozen")).toBeVisible();
   await expect(dock(viraj)).toContainText("paused");
+  await controls.getByRole("button", { name: "Resume" }).click();
+  for (const device of [viraj, vineet]) await expect(device.page.getByText("Bidding is frozen")).toHaveCount(0);
+});
+
+test("8b. while paused, the host's position filter shows everyone the same remaining players", async () => {
+  const pool = (device: Device) => device.page.getByRole("region", { name: "Remaining players" });
+  const filterButton = (name: string) => pool(host).getByRole("group", { name: "Show players" }).getByRole("button", { name, exact: true });
+  /** Position badges of the listed players. */
+  const positions = (device: Device) => pool(device).getByRole("listitem").locator("span:first-child").allTextContents();
+  const controls = host.page.getByRole("region", { name: "Host controls" });
+
+  await controls.getByRole("button", { name: "Pause" }).click();
+  for (const device of [host, viraj, vineet]) await expect(pool(device)).toBeVisible();
+  await expect(filterButton("All")).toHaveAttribute("aria-pressed", "true");
+  const allCount = await pool(viraj).getByRole("listitem").count();
+  expect(allCount).toBeGreaterThan(20);
+  // Managers see the filter but get no controls for it.
+  for (const device of [viraj, vineet]) {
+    await expect(pool(device).getByRole("button")).toHaveCount(0);
+    await expect(pool(device)).toContainText("Chosen by the host");
+  }
+
+  await filterButton("GK").click();
+  await expect(filterButton("GK")).toHaveAttribute("aria-pressed", "true");
+  for (const device of [host, viraj, vineet]) {
+    await expect.poll(async () => [...new Set(await positions(device))]).toEqual(["GK"]);
+  }
+  const goalkeepers = await pool(host).getByRole("listitem").allTextContents();
+  expect(await pool(viraj).getByRole("listitem").allTextContents()).toEqual(goalkeepers);
+  expect(goalkeepers.length).toBeLessThan(allCount);
+  // Nothing about the lot changed.
+  for (const device of [host, viraj, vineet]) await expect(bidding(device)).toContainText("$3");
+
+  // The filter survives resume and the next pause; then back to All.
+  await controls.getByRole("button", { name: "Resume" }).click();
+  for (const device of [host, viraj]) await expect(pool(device)).toHaveCount(0);
+  await controls.getByRole("button", { name: "Pause" }).click();
+  await expect(filterButton("GK")).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(async () => [...new Set(await positions(vineet))]).toEqual(["GK"]);
+  await filterButton("All").click();
+  await expect.poll(() => pool(viraj).getByRole("listitem").count()).toBe(allCount);
   await controls.getByRole("button", { name: "Resume" }).click();
   for (const device of [viraj, vineet]) await expect(device.page.getByText("Bidding is frozen")).toHaveCount(0);
 });

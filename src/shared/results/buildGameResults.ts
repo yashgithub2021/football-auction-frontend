@@ -131,7 +131,6 @@ function toManagerResult(game: Game, manager: Manager, acquisitions: ReadonlyMap
       positionGroup,
       nationality: player.nationality,
       price: result.amount,
-      acquiredBy: result.outcome,
       lotNumber: result.lotNumber,
     };
   });
@@ -154,7 +153,6 @@ function toManagerResult(game: Game, manager: Manager, acquisitions: ReadonlyMap
 
 function buildStatistics(game: Game, lots: readonly LotHistoryEntry[]): AuctionStatistics {
   let playersSold = 0;
-  let playersAutoAwarded = 0;
   let playersUnsold = 0;
   let totalSpent = 0;
   let highestSale: HighestSale | null = null;
@@ -164,8 +162,7 @@ function buildStatistics(game: Game, lots: readonly LotHistoryEntry[]): AuctionS
       playersUnsold += 1;
       continue;
     }
-    if (result.outcome === "SOLD") playersSold += 1;
-    else playersAutoAwarded += 1;
+    playersSold += 1;
     totalSpent += result.amount;
     // Strictly greater: on a tie the earliest lot keeps the record.
     if (highestSale === null || result.amount > highestSale.amount) {
@@ -178,16 +175,14 @@ function buildStatistics(game: Game, lots: readonly LotHistoryEntry[]): AuctionS
     }
   }
 
-  const acquired = playersSold + playersAutoAwarded;
   return {
     lotsCompleted: game.history.length,
     playersSold,
-    playersAutoAwarded,
     playersUnsold,
     lotsInterrupted: game.interruptedLot === null ? 0 : 1,
     totalBids: lots.reduce((sum, lot) => sum + lot.bids.length, 0),
     totalSpent,
-    averagePrice: acquired === 0 ? null : roundToOneDecimal(totalSpent / acquired),
+    averagePrice: playersSold === 0 ? null : roundToOneDecimal(totalSpent / playersSold),
     highestSale,
   };
 }

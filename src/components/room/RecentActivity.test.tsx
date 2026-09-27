@@ -39,19 +39,20 @@ describe("recentActivity", () => {
     expect(recentActivity(revealed).map((item) => item.text)).toEqual([`Lot 1: ${player} sold to Viraj for $3`]);
   });
 
-  it("describes unsold and auto-awarded lots and keeps only the latest few", () => {
+  it("describes sold and unsold lots and keeps only the latest few", () => {
     const game = liveGame();
     const ids = game.availablePlayerIds.slice(0, RECENT_ACTIVITY_LIMIT + 2);
     const history = ids.map((playerId, index) =>
       index % 2 === 0
         ? { lotNumber: index + 1, playerId, managerId: null, amount: 0, outcome: "UNSOLD" as const, completedAt: T0 + index, bids: [] }
-        : { lotNumber: index + 1, playerId, managerId: "manager-1", amount: 1, outcome: "AUTO_AWARDED" as const, completedAt: T0 + index, bids: [] },
+        : { lotNumber: index + 1, playerId, managerId: "manager-1", amount: 1, outcome: "SOLD" as const, completedAt: T0 + index, bids: [{ managerId: "manager-1", amount: 1, placedAt: T0 }] },
     );
     const items = recentActivity({ ...game, history });
     expect(items).toHaveLength(RECENT_ACTIVITY_LIMIT);
     const last = ids.length;
-    expect(items[0]?.text).toBe(`Lot ${last}: ${nameOf(ids[last - 1] ?? "")} auto-awarded to Yash for $1`);
+    expect(items[0]?.text).toBe(`Lot ${last}: ${nameOf(ids[last - 1] ?? "")} sold to Yash for $1`);
     expect(items[1]?.text).toBe(`Lot ${last - 1}: ${nameOf(ids[last - 2] ?? "")} went unsold`);
+    expect(items.some((item) => /award/i.test(item.text))).toBe(false);
   });
 });
 

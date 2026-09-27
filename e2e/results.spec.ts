@@ -2,9 +2,11 @@
  * Final results after a natural finish, against the real server:
  *   Yash  – host who plays, desktop 1440×900 (clipboard allowed)
  *   Viraj – manager on a phone, 390×844
- * Team size 1, so the game ends by itself: Viraj wins lot 1 after a short
- * bidding war, then Yash is the last manager with a slot and the server
- * auto-awards him a player at the minimum bid.
+ * Team size 1, so the game ends by itself:
+ *   lot 1: Viraj wins after a short bidding war ($1, $2, $3)
+ *   lot 2: Yash is the last manager with a slot, but nobody bids → UNSOLD;
+ *          nothing is handed to him
+ *   lot 3: Yash bids $1 and wins → every squad is full
  */
 import { expect, test } from "@playwright/test";
 import {
@@ -28,8 +30,13 @@ test.describe.configure({ mode: "serial" });
 let host: Device;
 let viraj: Device;
 let roomId = "";
-/** Name of the player Viraj wins, read off the lot card during the game. */
+/** Player names read off the lot card during the game. */
 let lotOnePlayer = "";
+let unsoldPlayer = "";
+let yashPlayer = "";
+
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const lotCardName = async (device: Device) => (await device.page.getByRole("article").getByRole("heading", { level: 2 }).textContent()) ?? "";
 
 const dock = (device: Device) => device.page.getByRole("region", { name: "Your bid controls" });
 const completeHeading = (device: Device) => device.page.getByRole("heading", { level: 1, name: "Auction complete", exact: true });
@@ -52,7 +59,7 @@ test("1. a short game plays to its natural end and everyone gets 'Auction comple
   await host.page.getByRole("button", { name: "Start auction" }).click();
   await expect(dock(viraj)).toBeVisible({ timeout: 15_000 });
 
-  lotOnePlayer = (await viraj.page.getByRole("article").getByRole("heading", { level: 2 }).textContent()) ?? "";
+  lotOnePlayer = await lotCardName(viraj);
   expect(lotOnePlayer).not.toBe("");
   await dock(viraj).getByRole("button", { name: "Open bidding at $1" }).click();
   await dock(host).getByRole("button", { name: /^Bid \$2/ }).click();
@@ -61,7 +68,22 @@ test("1. a short game plays to its natural end and everyone gets 'Auction comple
   // The live feed shows the bidding war as it happens.
   await expect(host.page.getByTestId("recent-activity")).toContainText(`Viraj bid $3 for ${lotOnePlayer}`);
 
-  // The server closes the lot, auto-awards Yash's last slot and finishes the game.
+  // Lot 2: Yash is the only manager with a slot, yet it's a normal auction. Nobody bids.
+  await expect(host.page.getByRole("article")).toContainText("Lot 2", { timeout: 15_000 });
+  unsoldPlayer = await lotCardName(host);
+  await expect(dock(host).getByRole("button", { name: "Open bidding at $1" })).toBeVisible();
+  for (const device of [host, viraj]) {
+    await expect(device.page.getByRole("group", { name: "Unsold" })).toBeVisible({ timeout: 10_000 });
+  }
+  await expect(host.page.getByRole("region", { name: "Your squad · 0/1" })).toBeVisible(); // nothing handed out
+  await expect(host.page.getByTestId("recent-activity")).toContainText(`Lot 2: ${unsoldPlayer} went unsold`);
+
+  // Lot 3: Yash has to bid to fill his slot.
+  await expect(host.page.getByRole("article")).toContainText("Lot 3", { timeout: 10_000 });
+  yashPlayer = await lotCardName(host);
+  await dock(host).getByRole("button", { name: "Open bidding at $1" }).click();
+
+  // The server closes the lot and, with every squad full, finishes the game.
   for (const device of [host, viraj]) {
     await expect(completeHeading(device)).toBeVisible({ timeout: 20_000 });
     await expect(device.page.locator("[data-view=results]")).toHaveAttribute("data-end-reason", "COMPLETED");
@@ -75,13 +97,15 @@ test("2. each team shows its players, prices, spending and remaining budget", as
     await expect(statValue(virajCard, "Spent")).toHaveText("$3");
     await expect(statValue(virajCard, "Remaining")).toHaveText("$17");
     await expect(statValue(virajCard, "Squad")).toHaveText("1/1");
-    await expect(virajCard.getByRole("list", { name: "Viraj's players" }).getByRole("listitem")).toHaveText([new RegExp(`${lotOnePlayer}.*\\$3$`)]);
+    await expect(virajCard.getByRole("list", { name: "Viraj's players" }).getByRole("listitem")).toHaveText([new RegExp(`${escapeRegExp(lotOnePlayer)}.*\\$3$`)]);
 
     const yashCard = teamCard(device.page, "Yash");
     await expect(statValue(yashCard, "Spent")).toHaveText("$1");
     await expect(statValue(yashCard, "Remaining")).toHaveText("$19");
-    await expect(yashCard.getByRole("list", { name: "Yash's players" }).getByRole("listitem")).toHaveCount(1);
-    await expect(yashCard).toContainText("Auto-awarded");
+    await expect(yashCard.getByRole("list", { name: "Yash's players" }).getByRole("listitem")).toHaveText([new RegExp(`${escapeRegExp(yashPlayer)}.*\\$1$`)]);
+    // The unsold player belongs to nobody; nothing was auto-awarded.
+    for (const card of [virajCard, yashCard]) await expect(card).not.toContainText(unsoldPlayer);
+    await expect(device.page.getByText(/auto-award/i)).toHaveCount(0);
     for (const card of [virajCard, yashCard]) {
       await expect(card).toContainText("Squad complete");
       await expect(card.getByRole("heading", { name: "Squad composition" })).toBeVisible();
@@ -96,50 +120,41 @@ test("2. each team shows its players, prices, spending and remaining budget", as
 test("3. statistics and the lot-by-lot history match what happened", async () => {
   const page = host.page;
   const stats = page.getByRole("region", { name: "Auction statistics" });
-  await expect(statValue(stats, "Lots completed")).toHaveText("2");
-  await expect(statValue(stats, "Sold")).toHaveText("1");
-  await expect(statValue(stats, "Auto-awarded")).toHaveText("1");
-  await expect(statValue(stats, "Unsold")).toHaveText("0");
-  await expect(statValue(stats, "Bids placed")).toHaveText("3");
+  await expect(statValue(stats, "Lots completed")).toHaveText("3");
+  await expect(statValue(stats, "Sold")).toHaveText("2");
+  await expect(statValue(stats, "Unsold")).toHaveText("1");
+  await expect(stats.locator("dt", { hasText: /^Auto-awarded$/ })).toHaveCount(0);
+  await expect(statValue(stats, "Bids placed")).toHaveText("4");
   await expect(statValue(stats, "Total spent")).toHaveText("$4");
   await expect(statValue(stats, "Average price")).toHaveText("$2");
   await expect(stats).toContainText(`${lotOnePlayer} to Viraj for $3 (lot 1)`);
 
   const history = page.getByRole("region", { name: "Auction history" });
-  await expect(history.getByRole("listitem", { name: /^Lot \d+$/ })).toHaveCount(2);
+  await expect(history.getByRole("listitem", { name: /^Lot \d+$/ })).toHaveCount(3);
   const lot1 = history.getByRole("listitem", { name: "Lot 1" });
   await expect(lot1).toContainText(lotOnePlayer);
   await expect(lot1).toContainText("Sold to Viraj for $3");
   await lot1.getByText("3 bids").click();
   await expect(lot1.getByRole("listitem")).toHaveText(["Viraj $1", "Yash $2", "Viraj $3"]);
-  await expect(history.getByRole("listitem", { name: "Lot 2" })).toContainText("Auto-awarded to Yash for $1");
+  const lot2 = history.getByRole("listitem", { name: "Lot 2" });
+  await expect(lot2).toContainText(unsoldPlayer);
+  await expect(lot2).toContainText("Unsold");
+  await expect(lot2).toContainText("No bids, went unsold");
+  await expect(history.getByRole("listitem", { name: "Lot 3" })).toContainText("Sold to Yash for $1");
 });
 
-test("4. Copy results puts a clean plain-text summary on the clipboard and confirms it", async () => {
+test("4. Copy results puts exactly the team names and player names on the clipboard", async () => {
   const page = host.page;
-  const yashPlayer = (await teamCard(page, "Yash").getByRole("listitem").locator("span.truncate").textContent()) ?? "";
   await page.getByRole("button", { name: "Copy results" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Results copied" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Copied" })).toBeVisible();
 
   const copied = await page.evaluate(() => navigator.clipboard.readText());
-  expect(copied).toBe(
-    [
-      "Football Auction: auction complete",
-      "",
-      "Team Yash",
-      `- ${yashPlayer} — $1`,
-      "",
-      "Team Viraj",
-      `- ${lotOnePlayer} — $3`,
-      "",
-      "Remaining Budget:",
-      "Yash — $19",
-      "Viraj — $17",
-    ].join("\n"),
-  );
+  expect(copied).toBe(`Team Yash\n${yashPlayer}\n\nTeam Viraj\n${lotOnePlayer}`);
+  expect(copied).not.toContain(unsoldPlayer);
   expect(copied).not.toContain(roomId);
-  expect(copied).not.toMatch(/manager-\d|[<>]/);
+  expect(copied).not.toMatch(/\$|manager-\d|[<>*#]|Remaining|Football Auction/);
+  expect(copied).not.toMatch(/^\s*(- |\d+\.)/m); // no bullets or numbering
 });
 
 test("5. on a phone: own team first, no sideways scrolling, readable, copy button reachable", async () => {

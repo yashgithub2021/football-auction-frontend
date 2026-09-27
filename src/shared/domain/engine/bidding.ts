@@ -27,17 +27,6 @@ export function getAmountSpent(manager: Manager, settings: GameSettings): number
   return settings.startingBudget - manager.budgetRemaining;
 }
 
-export function getActiveManagers(
-  managers: readonly Manager[],
-  settings: GameSettings,
-): Manager[] {
-  return managers.filter((manager) => isManagerActive(manager, settings));
-}
-
-export function getTotalOpenSlots(managers: readonly Manager[], settings: GameSettings): number {
-  return managers.reduce((total, manager) => total + getOpenSlots(manager, settings), 0);
-}
-
 export function getManagerById(game: Game, managerId: string): Manager | undefined {
   return game.managers.find((manager) => manager.id === managerId);
 }

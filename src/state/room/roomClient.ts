@@ -16,6 +16,7 @@ import {
   type CommandData,
   type CommandEvent,
   type EnteredRoomData,
+  type PlayerFilter,
   type PublicRoomSnapshot,
   type ResumedRoomData,
   type SessionMessage,
@@ -318,4 +319,6 @@ export class RoomClient {
   endGame = () => this.command("game:end", {});
   /** Host, after the game: back to the lobby with the same people. The server decides if that's allowed. */
   newAuction = () => this.command("game:newAuction", {});
+  /** Host, while paused: which positions the remaining-players list shows. The server authorizes and broadcasts it. */
+  setPlayerFilter = (filter: PlayerFilter) => this.command("game:setPlayerFilter", { filter });
 }

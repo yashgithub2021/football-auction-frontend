@@ -14,6 +14,7 @@
  */
 
 import type { BidRejectionReason, GameSettings, SetupError } from "../domain/types";
+import type { PlayerFilter } from "../room/playerFilter";
 import type { PublicRoomSnapshot, RoomErrorCode, SessionSnapshot, StartBlocker } from "../room/types";
 
 export type {
@@ -27,6 +28,12 @@ export type {
   StartBlocker,
 } from "../room/types";
 export { MAX_NAME_LENGTH } from "../room/constants";
+/**
+ * The host's remaining-players filter. `filterAvailablePlayers` is a pure
+ * display selector over the snapshot's game, shared so every client lists
+ * exactly the same players for a filter.
+ */
+export { DEFAULT_PLAYER_FILTER, PLAYER_FILTERS, filterAvailablePlayers, isPlayerFilter, type PlayerFilter } from "../room/playerFilter";
 /** Final results carried by `PublicRoomSnapshot.results`, built on the server. */
 export type {
   AuctionStatistics,
@@ -60,6 +67,7 @@ export const CLIENT_EVENTS = [
   "game:resume",
   "game:end",
   "game:newAuction",
+  "game:setPlayerFilter",
   "clock:ping",
 ] as const;
 
@@ -110,6 +118,8 @@ export interface ClientPayloads {
   "game:end": WithRequestId;
   /** Host, once the game is over: back to the lobby with the same people and settings. */
   "game:newAuction": WithRequestId;
+  /** Host, while paused: which positions the remaining-players list shows. */
+  "game:setPlayerFilter": WithRequestId & { filter: PlayerFilter };
   "clock:ping": WithRequestId & { clientSentAt: number };
 }
 

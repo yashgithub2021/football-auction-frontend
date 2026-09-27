@@ -13,6 +13,7 @@ import { buildGameResults } from "@results";
 import {
   MAX_NAME_LENGTH,
   type EnteredRoomData,
+  type PlayerFilter,
   type PublicParticipant,
   type PublicRoomSnapshot,
   type ResumedRoomData,
@@ -61,6 +62,7 @@ function base(overrides: Partial<PublicRoomSnapshot>): PublicRoomSnapshot {
     settings: DEFAULT_SETTINGS,
     countdown: null,
     game: null,
+    playerFilter: "ALL",
     results: null,
     startBlockers: [],
     limits: { minPlayingManagers: MIN_MANAGERS, maxPlayingManagers: MAX_PLAYING, maxNameLength: MAX_NAME_LENGTH },
@@ -101,9 +103,20 @@ export interface GameOptions {
   /** Bids placed by participant id, applied through the real engine. */
   bids?: ReadonlyArray<{ participantId: string; amount: number; at?: number }>;
   withSpectator?: boolean;
+  /** Pause the lot (through the engine) 500ms after `now`. */
+  paused?: boolean;
+  playerFilter?: PlayerFilter;
 }
 
-export function gameSnapshot({ version = 10, hostPlaying = true, now = T0, bids = [], withSpectator = false }: GameOptions = {}): PublicRoomSnapshot {
+export function gameSnapshot({
+  version = 10,
+  hostPlaying = true,
+  now = T0,
+  bids = [],
+  withSpectator = false,
+  paused = false,
+  playerFilter = "ALL",
+}: GameOptions = {}): PublicRoomSnapshot {
   const players = hostPlaying ? [HOST, VIRAJ, VINEET] : [VIRAJ, VINEET];
   const created = createGame({ id: ROOM_ID, managerNames: players.map((p) => p.name), now });
   if (!created.ok) throw new Error("fixture game failed");
@@ -115,6 +128,11 @@ export function gameSnapshot({ version = 10, hostPlaying = true, now = T0, bids 
     if (managerId === null || managerId === undefined) throw new Error("fixture: bidder isn't playing");
     game = applyAction(game, { type: "PLACE_BID", managerId, amount: bid.amount }, { now: bid.at ?? now, random }).game;
   }
+  if (paused) {
+    const pausedAt = Math.max(now, ...bids.map((b) => b.at ?? now)) + 500;
+    game = applyAction(game, { type: "PAUSE" }, { now: pausedAt, random }).game;
+    if (game.status !== "PAUSED") throw new Error("fixture: pause failed");
+  }
 
   const people = [
     participant(HOST, { playing: hostPlaying, managerId: managerIdOf.get(IDS.host) ?? null }),
@@ -122,7 +140,7 @@ export function gameSnapshot({ version = 10, hostPlaying = true, now = T0, bids 
     participant(VINEET, { ready: true, managerId: managerIdOf.get(IDS.vineet) ?? null }),
     ...(withSpectator ? [participant({ participantId: IDS.watcher, name: "Watcher" }, { role: "SPECTATOR", playing: false })] : []),
   ];
-  return base({ status: "IN_GAME", version, serverNow: now, participants: people, game });
+  return base({ status: "IN_GAME", version, serverNow: now, participants: people, game, playerFilter });
 }
 
 export interface FinishedOptions {
@@ -139,8 +157,9 @@ export interface FinishedOptions {
  *
  * COMPLETED (Yash, Viraj, Vineet; team size 1):
  *   lot 1: Viraj $1, Vineet $2, Viraj $3 → sold to Viraj for $3
- *   lot 2: Vineet $2 → sold to Vineet
- *   lot 3: Yash is the last manager with a slot → auto-awarded at $1
+ *   lot 2: no bids → unsold (nobody gets the player)
+ *   lot 3: Vineet $2 → sold to Vineet
+ *   lot 4: Yash, the last manager with a slot, bids $1 → sold to Yash
  * ENDED_EARLY (team size 6):
  *   lot 1: Viraj $2 → sold; lot 2: Vineet $1, then the host ends the game.
  */
@@ -177,9 +196,13 @@ export function finishedSnapshot({ ending, hostPlaying = true, withSpectator = f
     bid(IDS.viraj, 3);
     finishStage();
     finishStage();
+    finishStage(); // lot 2: nobody bids
+    finishStage();
     bid(IDS.vineet, 2);
     finishStage();
-    finishStage(); // Yash is the only manager left: auto-award
+    finishStage();
+    bid(IDS.host, 1); // Yash still has to bid for his slot
+    finishStage();
     finishStage();
   } else {
     bid(IDS.viraj, 2);

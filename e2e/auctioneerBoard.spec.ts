@@ -99,6 +99,15 @@ test("ending the game needs confirmation and ends it for everyone", async () => 
   }).toPass({ timeout: 30_000 });
   await expect(nirbhay).toContainText("Leading");
 
+  // While paused, the auctioneer's position filter reaches the managers' devices.
+  const boardPool = board.page.getByRole("region", { name: "Remaining players" });
+  const phonePool = phone.page.getByRole("region", { name: "Remaining players" });
+  await boardPool.getByRole("group", { name: "Show players" }).getByRole("button", { name: "DEF", exact: true }).click();
+  await expect(boardPool.getByRole("button", { name: "DEF", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(phonePool).toContainText("Chosen by the host");
+  await expect.poll(async () => [...new Set(await phonePool.getByRole("listitem").locator("span:first-child").allTextContents())].every((p) => ["CB", "LB", "RB", "LWB", "RWB"].includes(p))).toBe(true);
+  await expect(phonePool.getByRole("button")).toHaveCount(0);
+
   await controls.getByRole("button", { name: "End game" }).click();
   await expect(board.page.locator("[data-view=board]")).toBeVisible(); // not ended yet
   await controls.getByRole("button", { name: "Confirm end game" }).click();

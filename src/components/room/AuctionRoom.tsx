@@ -1,12 +1,11 @@
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { getOpenSlots } from "@domain/engine";
 import { getPlayerById } from "@domain/players/players";
 import type { Game, Manager } from "@domain/types";
 import type { PublicRoomSnapshot, SessionSnapshot } from "@protocol";
 import { BidStatus } from "@/components/auction/BidStatus";
-import { HostControls } from "@/components/auction/HostControls";
 import { ManagerBidPanel } from "@/components/auction/ManagerBidPanel";
 import { PlayerCard } from "@/components/auction/PlayerCard";
 import { RevealOverlay } from "@/components/auction/RevealOverlay";
@@ -16,8 +15,8 @@ import { managerPresence, usesManagerView, viewerKind } from "@/state/room/viewe
 import { BidDock } from "./BidDock";
 import { errorText } from "./errorText";
 import { LotStatus } from "./LotStatus";
+import { PlayerPoolPanel } from "./PlayerPoolPanel";
 import { RecentActivity } from "./RecentActivity";
-import { ActionButton, ErrorMessage } from "./ui";
 
 interface AuctionRoomProps {
   snapshot: PublicRoomSnapshot;
@@ -25,52 +24,6 @@ interface AuctionRoomProps {
   serverNow: number;
   /** Connected and attached. When false, everything shown is the last known server state. */
   live: boolean;
-}
-
-/**
- * Host auction controls, set apart from game actions (amber panel, own
- * heading) so they never sit on top of the bid buttons. Ending the game asks
- * for confirmation; pause/resume follow the server's game status.
- */
-function HostPanel({ game, live }: { game: Game; live: boolean }) {
-  const client = useRoomClient();
-  const headingId = useId();
-  const pause = useRequest(client.pause);
-  const resume = useRequest(client.resumeAuction);
-  const end = useRequest(client.endGame);
-  const [confirmingEnd, setConfirmingEnd] = useState(false);
-  const error = [pause, resume, end].find((request) => request.error !== null)?.error ?? null;
-
-  return (
-    <section aria-labelledby={headingId} className="rounded-2xl border-2 border-amber-300/50 bg-amber-300/5 p-3 sm:p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id={headingId} className="text-sm font-black tracking-widest text-amber-200 uppercase">
-          Host controls
-        </h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <HostControls status={live ? game.status : "PLAYER_SOLD"} onPause={() => void pause.run()} onResume={() => void resume.run()} />
-          {confirmingEnd ? (
-            <>
-              <ActionButton tone="danger" pending={end.pending} onClick={() => void end.run()}>
-                Confirm end game
-              </ActionButton>
-              <ActionButton tone="secondary" onClick={() => setConfirmingEnd(false)}>
-                Keep playing
-              </ActionButton>
-            </>
-          ) : (
-            <ActionButton tone="danger" unavailable={!live} onClick={() => live && setConfirmingEnd(true)}>
-              End game
-            </ActionButton>
-          )}
-        </div>
-      </div>
-      {confirmingEnd && <p className="mt-2 text-sm text-amber-100">This ends the auction for everyone. Squads stay as they are.</p>}
-      <div className="mt-2">
-        <ErrorMessage>{error !== null && errorText(error)}</ErrorMessage>
-      </div>
-    </section>
-  );
 }
 
 function PausedOverlay({ game, serverNow }: { game: Game; serverNow: number }) {
@@ -173,8 +126,10 @@ function OtherManagers({ game, excludeManagerId, presence }: { game: Game; exclu
  * Role-based auction view, chosen from the server's session snapshot:
  * - playing viewers (manager, host who plays): phone-first. Player, bid and
  *   timer on top; own squad and others below; bid dock pinned to the bottom
- *   (a sticky side column from `lg` up). A playing host also gets the host panel.
- * - host who doesn't play: the auctioneer board with every manager and host controls.
+ *   (a sticky side column from `lg` up).
+ * - host who doesn't play: the auctioneer board with every manager.
+ * The host's pause/resume and end controls are icons in the room header
+ * (HostHeaderControls), beside the connection indicator, in both views.
  * - spectators: the same board, without any controls at all.
  * Layout is CSS-only (breakpoints), no viewport detection in JavaScript.
  */
@@ -187,7 +142,6 @@ export function AuctionRoom({ snapshot, session, serverNow, live }: AuctionRoomP
   const auction = game.currentAuction;
   const player = auction === null ? undefined : getPlayerById(auction.playerId);
   const presence = managerPresence(snapshot);
-  const hostPanel = session.isHost ? <HostPanel game={game} live={live} /> : null;
   const announcer = (
     <p role="status" aria-live="polite" className="sr-only">
       {live ? announcement(game) : "Connection lost. Showing the last known state."}
@@ -205,7 +159,6 @@ export function AuctionRoom({ snapshot, session, serverNow, live }: AuctionRoomP
       >
         {announcer}
         <div className="min-w-0 space-y-4 lg:row-span-2">
-          {hostPanel}
           <OfflineVeil live={live}>
             <div className="relative space-y-3">
               {auction !== null && player !== undefined && <PlayerCard player={player} lotNumber={auction.lotNumber} />}
@@ -214,6 +167,7 @@ export function AuctionRoom({ snapshot, session, serverNow, live }: AuctionRoomP
               <RevealOverlay game={game} now={serverNow} />
             </div>
           </OfflineVeil>
+          <PlayerPoolPanel game={game} filter={snapshot.playerFilter} isHost={session.isHost} live={live} />
           {me !== undefined && <MySquad manager={me} teamSize={game.settings.teamSize} />}
         </div>
         <div className="min-w-0 space-y-4 lg:col-start-2 lg:row-start-2">
@@ -246,7 +200,6 @@ export function AuctionRoom({ snapshot, session, serverNow, live }: AuctionRoomP
   return (
     <div data-view="board" className="space-y-5">
       {announcer}
-      {hostPanel}
       {spectator && (
         <p className="rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-center font-semibold">
           You&apos;re watching. Bidding is for the managers in this game.
@@ -264,6 +217,7 @@ export function AuctionRoom({ snapshot, session, serverNow, live }: AuctionRoomP
           </div>
         )}
       </OfflineVeil>
+      <PlayerPoolPanel game={game} filter={snapshot.playerFilter} isHost={session.isHost} live={live} />
       <section aria-labelledby="board-managers-heading">
         <h2 id="board-managers-heading" className="text-sm font-bold tracking-widest text-emerald-200/80 uppercase">
           Managers

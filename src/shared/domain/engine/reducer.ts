@@ -9,8 +9,8 @@
  * Status flow:
  *   READY ─START_GAME→ AUCTION_ACTIVE ─(bids reset endsAt)→ AUCTION_ACTIVE
  *   AUCTION_ACTIVE ─PAUSE→ PAUSED ─RESUME→ AUCTION_ACTIVE
- *   AUCTION_ACTIVE ─TICK (now ≥ endsAt)→ PLAYER_SOLD (SOLD / UNSOLD / AUTO_AWARDED)
- *   PLAYER_SOLD ─TICK (reveal over)→ AUCTION_ACTIVE | PLAYER_SOLD (last-manager auto-award) | GAME_COMPLETE
+ *   AUCTION_ACTIVE ─TICK (now ≥ endsAt)→ PLAYER_SOLD (SOLD to the highest bidder, or UNSOLD)
+ *   PLAYER_SOLD ─TICK (reveal over)→ AUCTION_ACTIVE | GAME_COMPLETE (squads full or pool exhausted)
  *   AUCTION_ACTIVE | PAUSED | PLAYER_SOLD ─END_GAME→ ENDED_EARLY
  *
  * PAUSE and END_GAME first catch up on elapsed time, so an auction whose timer

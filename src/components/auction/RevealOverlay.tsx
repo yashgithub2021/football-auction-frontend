@@ -8,7 +8,6 @@ interface RevealOverlayProps {
 
 const TONE_STYLES = {
   sold: "bg-lime-300 text-emerald-950",
-  awarded: "bg-sky-300 text-sky-950",
   unsold: "bg-white/90 text-emerald-950",
 } as const;
 

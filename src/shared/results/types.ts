@@ -25,9 +25,8 @@ export interface SquadPlayer {
   primaryPosition: Position;
   positionGroup: PositionGroup;
   nationality: string;
+  /** The winning bid: players only ever join a squad by being bought. */
   price: number;
-  /** SOLD (won with a bid) or AUTO_AWARDED (given at the minimum bid). */
-  acquiredBy: Exclude<AuctionOutcome, "UNSOLD">;
   lotNumber: number;
 }
 
@@ -91,10 +90,9 @@ export interface HighestSale {
 }
 
 export interface AuctionStatistics {
-  /** Lots that reached a result (sold, auto-awarded or unsold). */
+  /** Lots that reached a result (sold or unsold). */
   lotsCompleted: number;
   playersSold: number;
-  playersAutoAwarded: number;
   playersUnsold: number;
   /** 1 when the host ended the game with a lot on the block, else 0. */
   lotsInterrupted: number;
@@ -102,7 +100,7 @@ export interface AuctionStatistics {
   totalBids: number;
   /** Money spent by all managers together. */
   totalSpent: number;
-  /** totalSpent ÷ players acquired (sold + auto-awarded), one decimal. null if none. */
+  /** totalSpent ÷ players sold, one decimal. null if none. */
   averagePrice: number | null;
   /** Most expensive acquisition; the earliest lot wins a tie. null if none. */
   highestSale: HighestSale | null;

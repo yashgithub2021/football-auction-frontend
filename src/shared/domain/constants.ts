@@ -13,11 +13,12 @@
  * - Bids are processed sequentially; with near-simultaneous bids the first
  *   wins and the second is rejected (BELOW_INCREMENT / ALREADY_HIGHEST_BIDDER).
  * - A bid at or after endsAt is rejected as AUCTION_EXPIRED.
- * - When exactly one manager has open slots, each subsequent random player is
- *   auto-awarded to them at minimumBid (no auction).
- * - Tight pool: if a lot gets no bids and the remaining pool can no longer
- *   fill every open slot, the player is auto-awarded to the neediest manager
- *   (most open slots → lowest budget → injected RNG) at minimumBid.
+ * - A player joins a squad only through a winning bid. A lot with no bids is
+ *   UNSOLD: the player is discarded, nobody gets them and no budget moves.
+ *   Open slots or a small remaining pool never allocate a player.
+ * - Every lot is a normal auction, even when only one manager has open slots.
+ * - The game completes when every squad is full or the pool is exhausted;
+ *   squads may finish incomplete.
  * - Timestamps are absolute (endsAt, revealEndsAt) so state survives reloads.
  */
 

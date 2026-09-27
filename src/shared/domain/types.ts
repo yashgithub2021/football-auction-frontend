@@ -92,7 +92,8 @@ export interface Auction {
   bids: readonly Bid[];
 }
 
-export type AuctionOutcome = "SOLD" | "UNSOLD" | "AUTO_AWARDED";
+/** SOLD: won by the highest bid. UNSOLD: no bids; nobody gets the player. */
+export type AuctionOutcome = "SOLD" | "UNSOLD";
 
 export interface AuctionResult {
   lotNumber: number;
@@ -105,7 +106,7 @@ export interface AuctionResult {
   completedAt: number;
   /**
    * Every accepted bid on this lot, in the order placed. Empty for unsold
-   * lots and for auto-awards (nobody bid).
+   * lots (nobody bid).
    */
   bids: readonly Bid[];
 }
@@ -122,7 +123,7 @@ export interface Game {
   discardedPlayerIds: readonly string[];
   /**
    * The lot currently on the block. During PLAYER_SOLD this is the lot just
-   * finalized (or a placeholder lot for auto-awards) and carries revealEndsAt.
+   * finalized and carries revealEndsAt.
    */
   currentAuction: Auction | null;
   /** Result of the most recent lot; drives the sold reveal. */

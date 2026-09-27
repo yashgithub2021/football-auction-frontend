@@ -8,6 +8,7 @@ import { useRoomClient, useRoomState, useServerNow } from "@/state/room/RoomClie
 import { AuctionRoom } from "./AuctionRoom";
 import { ConnectionBanner } from "./ConnectionBanner";
 import { errorText } from "./errorText";
+import { HostHeaderControls } from "./HostHeaderControls";
 import { JoinRoomForm } from "./JoinRoomForm";
 import { LobbyScreen } from "./LobbyScreen";
 import { RoomHeader } from "./RoomHeader";
@@ -78,6 +79,10 @@ export function RoomScreen({ roomId }: { roomId: string }) {
     body = <p className="text-lg">This room has closed.</p>;
   }
 
+  // The host's pause/end icons sit in the header while the game runs; the server authorizes them.
+  const hostGame =
+    attached && state.session?.isHost === true && state.snapshot?.status === "IN_GAME" ? state.snapshot.game : null;
+
   return (
     <main className={`${PAGE_BACKGROUND} px-3 py-3 sm:px-6 sm:py-6`}>
       <div className="mx-auto max-w-[110rem] space-y-3 sm:space-y-4">
@@ -87,6 +92,7 @@ export function RoomScreen({ roomId }: { roomId: string }) {
           session={attached ? state.session : null}
           connection={state.connection}
           resuming={state.resuming}
+          hostControls={hostGame === null ? null : <HostHeaderControls game={hostGame} live={live} />}
         />
         <ConnectionBanner status={state.connection} resuming={state.resuming} />
         {state.notice !== null && !attached && (

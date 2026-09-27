@@ -11,14 +11,8 @@ export const END_REASON_HEADING: Record<EndReason, string> = {
   ENDED_EARLY: "Auction ended early",
 };
 
-const TEXT_TITLE: Record<EndReason, string> = {
-  COMPLETED: "auction complete",
-  ENDED_EARLY: "auction ended early",
-};
-
 export const OUTCOME_LABEL: Record<LotOutcome, string> = {
   SOLD: "Sold",
-  AUTO_AWARDED: "Auto-awarded",
   UNSOLD: "Unsold",
   INTERRUPTED: "Interrupted",
 };
@@ -28,8 +22,6 @@ export function describeLot(lot: LotHistoryEntry): string {
   switch (lot.outcome) {
     case "SOLD":
       return `Sold to ${lot.managerName ?? "a manager"} for ${formatMoney(lot.amount)}`;
-    case "AUTO_AWARDED":
-      return `Auto-awarded to ${lot.managerName ?? "a manager"} for ${formatMoney(lot.amount)}`;
     case "UNSOLD":
       return "No bids, went unsold";
     case "INTERRUPTED":
@@ -38,32 +30,21 @@ export function describeLot(lot: LotHistoryEntry): string {
 }
 
 /**
- * Plain-text summary for pasting into a group chat. Names, players and
- * money only: no internal ids, no markup.
- *
- *   Football Auction: auction complete
+ * The copyable final output, and nothing else: each team's name, then its
+ * players one per line in purchase order, with a blank line between teams
+ * (in the server's manager order). No prices, positions, budgets,
+ * statistics, headings, bullets or markup. A team with no players is just
+ * its name line.
  *
  *   Team Yash
- *   - Player A — $5
+ *   Messi
+ *   Ronaldo
  *
- *   Remaining Budget:
- *   Yash — $10
+ *   Team Nirbhay
+ *   Pele
  */
 export function formatResultsText(results: GameResults): string {
-  const lines: string[] = [`Football Auction: ${TEXT_TITLE[results.endReason]}`, ""];
-  for (const manager of results.managers) {
-    lines.push(`Team ${manager.name}`);
-    if (manager.players.length === 0) {
-      lines.push("- No players");
-    }
-    for (const player of manager.players) {
-      lines.push(`- ${player.name} — ${formatMoney(player.price)}`);
-    }
-    lines.push("");
-  }
-  lines.push("Remaining Budget:");
-  for (const manager of results.managers) {
-    lines.push(`${manager.name} — ${formatMoney(manager.budgetRemaining)}`);
-  }
-  return lines.join("\n");
+  return results.managers
+    .map((manager) => [`Team ${manager.name}`, ...manager.players.map((player) => player.name)].join("\n"))
+    .join("\n\n");
 }

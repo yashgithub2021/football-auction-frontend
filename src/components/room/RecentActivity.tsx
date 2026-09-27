@@ -7,7 +7,7 @@ export const RECENT_ACTIVITY_LIMIT = 6;
 
 export interface ActivityItem {
   key: string;
-  tone: "bid" | "sold" | "awarded" | "unsold";
+  tone: "bid" | "sold" | "unsold";
   text: string;
 }
 
@@ -40,8 +40,6 @@ export function recentActivity(game: Game, limit = RECENT_ACTIVITY_LIMIT): Activ
     const key = `lot-${result.lotNumber}`;
     if (result.outcome === "SOLD") {
       items.push({ key, tone: "sold", text: `Lot ${result.lotNumber}: ${player} sold to ${winner} for ${formatMoney(result.amount)}` });
-    } else if (result.outcome === "AUTO_AWARDED") {
-      items.push({ key, tone: "awarded", text: `Lot ${result.lotNumber}: ${player} auto-awarded to ${winner} for ${formatMoney(result.amount)}` });
     } else {
       items.push({ key, tone: "unsold", text: `Lot ${result.lotNumber}: ${player} went unsold` });
     }
@@ -52,7 +50,6 @@ export function recentActivity(game: Game, limit = RECENT_ACTIVITY_LIMIT): Activ
 const TONE_MARK: Record<ActivityItem["tone"], string> = {
   bid: "bg-white/60",
   sold: "bg-lime-300",
-  awarded: "bg-sky-300",
   unsold: "bg-white/20",
 };
 

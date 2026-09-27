@@ -8,11 +8,11 @@ import type {
   Manager,
   RandomFn,
 } from "../types";
-import { getTotalOpenSlots, validateBid } from "./bidding";
-import { pickNeediestManager, selectRandomPlayer } from "./selection";
+import { validateBid } from "./bidding";
+import { selectRandomPlayer } from "./selection";
 
 // ---------------------------------------------------------------------------
-// Internal helpers shared with game.ts
+// Internal helpers
 // ---------------------------------------------------------------------------
 
 interface DrawResult {
@@ -25,11 +25,11 @@ interface DrawResult {
  * Draws a random player and removes them from the pool permanently. Once a
  * player is drawn they can never be drawn again, whatever the outcome.
  */
-export function drawPlayer(game: Game, random: RandomFn): DrawResult {
+function drawPlayer(game: Game, random: RandomFn): DrawResult {
   const playerId = selectRandomPlayer(game.availablePlayerIds, random);
   if (playerId === null) {
-    // Unreachable when setup validation and the tight-pool rule hold.
-    throw new Error("Invariant violated: player pool exhausted before all squads were full.");
+    // Unreachable: advanceGame completes the game once the pool is empty.
+    throw new Error("Invariant violated: no player left to draw.");
   }
   return {
     playerId,
@@ -38,8 +38,8 @@ export function drawPlayer(game: Game, random: RandomFn): DrawResult {
   };
 }
 
-/** Returns a new managers array with the player added and the price deducted. */
-export function awardPlayer(
+/** Returns a new managers array with the player added to the winner and the price deducted. */
+function awardPlayer(
   managers: readonly Manager[],
   managerId: string,
   playerId: string,
@@ -57,7 +57,7 @@ export function awardPlayer(
 }
 
 /** Moves the game into the PLAYER_SOLD reveal for the given lot and result. */
-export function enterReveal(
+function enterReveal(
   game: Game,
   auction: Auction,
   result: AuctionResult,
@@ -130,18 +130,17 @@ export function placeBid(
 
 /**
  * Closes the live auction at `now`:
- * - Highest bidder exists → SOLD at the current bid.
- * - No bids and the remaining pool can no longer cover every open slot →
- *   AUTO_AWARDED to the neediest manager at the minimum bid.
- * - No bids otherwise → UNSOLD; the player is discarded permanently.
+ * - Highest bidder exists → SOLD to them at the current bid.
+ * - No bids → UNSOLD: the player is discarded permanently, nobody gets them,
+ *   no budget moves. A player only ever joins a squad through a winning bid;
+ *   open slots or a small remaining pool never allocate anyone.
  * Returns the game unchanged if there is no live auction.
  */
-export function finalizeAuction(game: Game, now: number, random: RandomFn): Game {
+export function finalizeAuction(game: Game, now: number): Game {
   const auction = game.currentAuction;
   if (game.status !== "AUCTION_ACTIVE" || auction === null) {
     return game;
   }
-  const { settings } = game;
 
   if (auction.highestBidderId !== null) {
     const result: AuctionResult = {
@@ -155,24 +154,6 @@ export function finalizeAuction(game: Game, now: number, random: RandomFn): Game
     };
     const managers = awardPlayer(game.managers, auction.highestBidderId, auction.playerId, auction.currentBid);
     return enterReveal({ ...game, managers }, auction, result, now);
-  }
-
-  const poolIsTight = game.availablePlayerIds.length < getTotalOpenSlots(game.managers, settings);
-  const neediest = poolIsTight ? pickNeediestManager(game.managers, settings, random) : null;
-
-  if (neediest !== null) {
-    const result: AuctionResult = {
-      lotNumber: auction.lotNumber,
-      playerId: auction.playerId,
-      managerId: neediest.id,
-      amount: settings.minimumBid,
-      outcome: "AUTO_AWARDED",
-      completedAt: now,
-      bids: auction.bids,
-    };
-    const managers = awardPlayer(game.managers, neediest.id, auction.playerId, settings.minimumBid);
-    const awardedLot: Auction = { ...auction, currentBid: settings.minimumBid, highestBidderId: neediest.id };
-    return enterReveal({ ...game, managers }, awardedLot, result, now);
   }
 
   const result: AuctionResult = {

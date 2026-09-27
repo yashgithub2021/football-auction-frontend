@@ -55,7 +55,7 @@ export function playerName(playerId: string): string {
   return getPlayerById(playerId)?.name ?? "Unknown player";
 }
 
-export type ResultTone = "sold" | "unsold" | "awarded";
+export type ResultTone = "sold" | "unsold";
 
 export interface ResultDescription {
   tone: ResultTone;
@@ -70,14 +70,6 @@ export function describeResult(game: Game, result: AuctionResult): ResultDescrip
   switch (result.outcome) {
     case "SOLD":
       return { tone: "sold", headline: "Sold", winner, amount: result.amount, detail: "Highest bid wins." };
-    case "AUTO_AWARDED":
-      return {
-        tone: "awarded",
-        headline: "Auto-awarded",
-        winner,
-        amount: result.amount,
-        detail: "Assigned at the minimum bid by the auction rules.",
-      };
     case "UNSOLD":
       return {
         tone: "unsold",

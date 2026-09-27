@@ -5,13 +5,11 @@ export { applyAction } from "./reducer";
 export { createGame, validateSettings, type CreateGameInput } from "./setup";
 export {
   calculateMaximumSafeBid,
-  getActiveManagers,
   getAmountSpent,
   getManagerById,
   getMinimumNextBid,
   getOpenSlots,
   getQuickBidOptions,
-  getTotalOpenSlots,
   hasBids,
   isManagerActive,
   validateBid,
@@ -23,9 +21,11 @@ export {
   canEndGame,
   completeGame,
   endGame,
+  isAuctionFinished,
   isGameOver,
+  isPoolExhausted,
   startGame,
   tick,
 } from "./game";
-export { pickNeediestManager, selectRandomPlayer } from "./selection";
+export { selectRandomPlayer } from "./selection";
 export { createSeededRandom } from "./random";
