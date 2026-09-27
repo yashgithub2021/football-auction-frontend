@@ -2,20 +2,20 @@ import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
 
 /**
- * The repository root (one level above frontend/). The UI imports the pure
- * auction domain from ../backend/src/domain via the `@domain/*` alias, and
- * Turbopack only compiles files inside its root, so the root must include
- * both apps. This also pins file tracing to the repo instead of guessing
- * from lockfiles (frontend/ and backend/ each have one).
+ * This app builds on its own: the backend code it shares (domain types and
+ * data, the wire protocol, results types) is a generated copy in src/shared
+ * (see scripts/sync-shared.mjs), so nothing outside this folder is compiled.
+ * The root is pinned to this folder so Next.js doesn't guess from lockfiles
+ * in parent folders.
  */
-const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
+const appRoot = fileURLToPath(new URL(".", import.meta.url));
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   turbopack: {
-    root: repositoryRoot,
+    root: appRoot,
   },
-  outputFileTracingRoot: repositoryRoot,
+  outputFileTracingRoot: appRoot,
 };
 
 export default nextConfig;

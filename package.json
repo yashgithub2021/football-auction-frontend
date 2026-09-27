@@ -11,7 +11,9 @@
         "typecheck": "tsc --noEmit",
         "test": "vitest run",
         "test:watch": "vitest",
-        "test:e2e": "playwright test"
+        "test:e2e": "playwright test",
+        "sync:shared": "node scripts/sync-shared.mjs",
+        "check:shared": "node scripts/sync-shared.mjs --check"
     },
     "dependencies": {
         "next": "16.3.6",

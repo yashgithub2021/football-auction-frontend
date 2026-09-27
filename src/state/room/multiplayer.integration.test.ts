@@ -6,6 +6,7 @@
  * Nothing is mocked. Requires `npm install` in backend/ (npm run install:all).
  */
 import { spawn, type ChildProcess } from "node:child_process";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createMemoryTokenStore, type TokenStore } from "@/lib/session/tokenStore";
@@ -16,12 +17,15 @@ const BACKEND_DIR = fileURLToPath(new URL("../../../../backend", import.meta.url
 const TSX_CLI = fileURLToPath(new URL("../../../../backend/node_modules/tsx/dist/cli.mjs", import.meta.url));
 const STARTUP_TIMEOUT_MS = 20_000;
 const WAIT_TIMEOUT_MS = 10_000;
+/** Only runs next to a backend checkout (the local two-app layout), not in a standalone frontend clone. */
+const HAS_BACKEND = existsSync(TSX_CLI);
 
 let backend: ChildProcess | null = null;
 let url = "";
 const clients: RoomClient[] = [];
 
 beforeAll(async () => {
+  if (!HAS_BACKEND) return;
   backend = spawn(process.execPath, [TSX_CLI, "src/server/index.ts"], {
     cwd: BACKEND_DIR,
     env: { ...process.env, PORT: "0", HOST: "127.0.0.1" },
@@ -94,7 +98,7 @@ function must<T>(result: { ok: true; data: T } | { ok: false; error: { code: str
   return result.data;
 }
 
-describe("three devices against the real backend", () => {
+describe.skipIf(!HAS_BACKEND)("three devices against the real backend", () => {
   it("share one authoritative room: join, settings, start, bid, reconnect", async () => {
     const [a, b, c] = [await device(), await device(), await device()];
 

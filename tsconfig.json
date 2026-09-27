@@ -19,9 +19,9 @@
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./src/*"],
-      "@domain/*": ["../backend/src/domain/*"],
-      "@protocol": ["../backend/src/protocol/index.ts"],
-      "@results": ["../backend/src/results/index.ts"]
+      "@domain/*": ["./src/shared/domain/*"],
+      "@protocol": ["./src/shared/protocol/index.ts"],
+      "@results": ["./src/shared/results/index.ts"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],

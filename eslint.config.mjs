@@ -22,8 +22,8 @@ const ENGINE_MUTATORS = [
 ];
 
 const BACKEND_INTERNALS = {
-    group: ["**/backend/src/server/**", "**/backend/src/room/**", "**/backend/src/domain/**"],
-    message: "Use @protocol (wire contract) or @domain (types, data, display selectors). Never import backend internals.",
+    group: ["**/backend/src/**", "@/shared/*", "@/shared/**", "**/shared/room/*"],
+    message: "Use @protocol (wire contract) or @domain (types, data, display selectors). Never import backend code or src/shared directly.",
 };
 
 export default defineConfig([
@@ -83,5 +83,6 @@ export default defineConfig([
             ],
         },
     },
-    globalIgnores([".next/**", "out/**", "build/**", "coverage/**", "next-env.d.ts"]),
+    // src/shared is generated from the backend (scripts/sync-shared.mjs) and linted there.
+    globalIgnores([".next/**", "out/**", "build/**", "coverage/**", "next-env.d.ts", "src/shared/**"]),
 ]);

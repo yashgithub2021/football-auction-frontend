@@ -4,10 +4,11 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: {
     alias: {
-      "@domain": fileURLToPath(new URL("../backend/src/domain", import.meta.url)),
-      "@protocol": fileURLToPath(new URL("../backend/src/protocol/index.ts", import.meta.url)),
+      // src/shared is a generated copy of backend code (scripts/sync-shared.mjs).
+      "@domain": fileURLToPath(new URL("./src/shared/domain", import.meta.url)),
+      "@protocol": fileURLToPath(new URL("./src/shared/protocol/index.ts", import.meta.url)),
       // Test fixtures only: builds real results the way the server does. App code reads snapshot.results.
-      "@results": fileURLToPath(new URL("../backend/src/results/index.ts", import.meta.url)),
+      "@results": fileURLToPath(new URL("./src/shared/results/index.ts", import.meta.url)),
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
