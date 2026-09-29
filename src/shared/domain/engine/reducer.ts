@@ -20,7 +20,7 @@
  */
 
 import type { ActionResult, EngineDeps, Game, GameAction } from "../types";
-import { pauseAuction, placeBid, resumeAuction } from "./auction";
+import { finalizeAuction, pauseAuction, placeBid, resumeAuction } from "./auction";
 import { canEndGame, endGame, startGame, tick } from "./game";
 
 function invalid(game: Game, action: GameAction): ActionResult {
@@ -68,6 +68,11 @@ export function applyAction(game: Game, action: GameAction, deps: EngineDeps): A
     case "END_GAME": {
       const caughtUp = tick(game, now, random);
       return canEndGame(caughtUp) ? { game: endGame(caughtUp) } : invalid(caughtUp, action);
+    }
+
+    case "SKIP_PLAYER": {
+      const caughtUp = tick(game, now, random);
+      return caughtUp.status === "AUCTION_ACTIVE" ? { game: finalizeAuction(caughtUp, now) } : invalid(caughtUp, action);
     }
 
     default: {

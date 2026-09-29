@@ -223,6 +223,7 @@ describe("lobby", () => {
       minimumBid: 1,
       bidIncrement: 1,
       auctionTimerMs: 5000,
+      auctionOrder: "RANDOM",
     });
     expect(await screen.findByText(/at least \$6/)).toBeTruthy();
   });

@@ -27,8 +27,8 @@ export function LobbySettingsForm({ settings, locked }: { settings: GameSettings
   const setField = (field: EditableSetting, value: string) => setInputs((current) => ({ ...current, [field]: value }));
 
   return (
-    <form onSubmit={submit} noValidate className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2">
+    <form onSubmit={submit} noValidate className="space-y-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         {SETTING_ORDER.map((field) => (
           <SettingField
             key={field}
@@ -37,6 +37,7 @@ export function LobbySettingsForm({ settings, locked }: { settings: GameSettings
             hint={SETTING_COPY[field].hint}
             prefix={SETTING_COPY[field].prefix}
             suffix={SETTING_COPY[field].suffix}
+            options={field === "auctionOrder" ? [{ value: "RANDOM", label: "Random order" }, { value: "POSITION", label: "Position order" }] : undefined}
             value={inputs[field]}
             errors={[]}
             onChange={(value) => setField(field, value)}

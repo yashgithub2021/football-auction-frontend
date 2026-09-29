@@ -14,6 +14,7 @@ export const SETTING_COPY: Readonly<Record<EditableSetting, SettingCopy>> = {
   minimumBid: { label: "Minimum bid", hint: "Lowest opening bid for a player, in dollars.", prefix: "$" },
   bidIncrement: { label: "Bid increment", hint: "Smallest raise over the current bid, in dollars.", prefix: "$" },
   auctionTimerMs: { label: "Auction timer", hint: "Seconds on the clock. Every valid bid resets it.", suffix: "sec" },
+  auctionOrder: { label: "Auction order", hint: "Choose random draws or goalkeeper → defence → midfield → forwards." },
 };
 
 export const SETTING_ORDER: readonly EditableSetting[] = [
@@ -22,4 +23,5 @@ export const SETTING_ORDER: readonly EditableSetting[] = [
   "minimumBid",
   "bidIncrement",
   "auctionTimerMs",
+  "auctionOrder",
 ];

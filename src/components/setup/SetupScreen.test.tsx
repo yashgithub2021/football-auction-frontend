@@ -30,11 +30,12 @@ const LABELS: Readonly<Record<EditableSetting, string>> = {
   minimumBid: "Minimum bid",
   bidIncrement: "Bid increment",
   auctionTimerMs: "Auction timer",
+  auctionOrder: "Auction order",
 };
 
 /** What each input shows for a domain value (the timer is entered in seconds). */
-const toInputValue = (field: EditableSetting, value: number) =>
-  String(field === "auctionTimerMs" ? value / MS_PER_SECOND : value);
+const toInputValue = (field: EditableSetting, value: number | string) =>
+  String(field === "auctionTimerMs" ? Number(value) / MS_PER_SECOND : value);
 
 function setup() {
   const onGameCreated = vi.fn<(game: Game) => void>();
@@ -274,7 +275,7 @@ describe("SetupScreen", () => {
     const expectedInput = {
       id: GAME_ID,
       managerNames: [" Yash ", "Viraj", "Vineet"],
-      settings: { startingBudget: 25, teamSize: 5, minimumBid: 2, bidIncrement: 3, auctionTimerMs: timerMs },
+      settings: { startingBudget: 25, teamSize: 5, minimumBid: 2, bidIncrement: 3, auctionTimerMs: timerMs, auctionOrder: "RANDOM" as const },
       now: CREATED_AT,
     };
     expect(createGame).toHaveBeenCalledWith(expectedInput);

@@ -170,6 +170,7 @@ export function LobbyScreen({ snapshot, session, serverNow, live }: LobbyScreenP
                 ["Minimum bid", `$${settings.minimumBid}`],
                 ["Bid increment", `$${settings.bidIncrement}`],
                 ["Timer", `${settings.auctionTimerMs / MS_PER_SECOND}s`],
+                ["Order", settings.auctionOrder === "POSITION" ? "Positions" : "Random"],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-2xl bg-emerald-950/60 px-2 py-3">
                   <dt className="text-xs font-bold tracking-widest text-emerald-200/80 uppercase">{label}</dt>

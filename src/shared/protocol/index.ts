@@ -13,7 +13,7 @@
  * (COUNTDOWN_ELAPSED, TICK, CLOSE_ROOM): the server issues those itself.
  */
 
-import type { BidRejectionReason, GameSettings, SetupError } from "../domain/types";
+import type { AuctionOrder, BidRejectionReason, GameSettings, SetupError } from "../domain/types";
 import type { PlayerFilter } from "../room/playerFilter";
 import type { PublicRoomSnapshot, RoomErrorCode, SessionSnapshot, StartBlocker } from "../room/types";
 
@@ -66,6 +66,7 @@ export const CLIENT_EVENTS = [
   "game:pause",
   "game:resume",
   "game:end",
+  "game:skip",
   "game:newAuction",
   "game:setPlayerFilter",
   "clock:ping",
@@ -100,6 +101,7 @@ interface WithRequestId {
 }
 
 export type SettingsPatch = Partial<GameSettings>;
+export type { AuctionOrder };
 
 export interface ClientPayloads {
   "room:create": WithRequestId & { name: string; playing: boolean; settings?: SettingsPatch };
@@ -116,6 +118,7 @@ export interface ClientPayloads {
   "game:pause": WithRequestId;
   "game:resume": WithRequestId;
   "game:end": WithRequestId;
+  "game:skip": WithRequestId;
   /** Host, once the game is over: back to the lobby with the same people and settings. */
   "game:newAuction": WithRequestId;
   /** Host, while paused: which positions the remaining-players list shows. */

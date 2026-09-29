@@ -45,6 +45,7 @@ export const DEFAULT_SETTINGS: Readonly<GameSettings> = Object.freeze({
   minimumBid: DEFAULT_MINIMUM_BID,
   bidIncrement: DEFAULT_BID_INCREMENT,
   auctionTimerMs: DEFAULT_AUCTION_TIMER_MS,
+  auctionOrder: "RANDOM",
 });
 
 /** Quick-bid button steps (+$1 / +$2 / +$5). */

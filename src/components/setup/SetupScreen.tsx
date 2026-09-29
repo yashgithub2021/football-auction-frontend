@@ -145,19 +145,19 @@ export function SetupScreen({
   const issueCount = errors.length;
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,var(--color-emerald-800),var(--color-emerald-950)_60%)] px-4 py-8 sm:px-8 sm:py-12">
+    <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,var(--color-emerald-800),var(--color-emerald-950)_60%)] px-4 py-4 sm:px-6 sm:py-6">
       <div className="mx-auto max-w-6xl">
         <header>
           <p className="text-sm font-black tracking-[0.3em] text-lime-300 uppercase">Football Auction</p>
-          <h1 ref={focusHeading} tabIndex={-1} className="mt-2 text-4xl font-black tracking-tight outline-none sm:text-6xl">
+          <h1 ref={focusHeading} tabIndex={-1} className="mt-1 text-3xl font-black tracking-tight outline-none sm:text-5xl">
             Set up your auction
           </h1>
-          <p className="mt-3 max-w-2xl text-lg text-emerald-100/80">
-            Add your managers and set the rules. Players are drawn at random, so nobody gets to cherry-pick.
+          <p className="mt-2 max-w-2xl text-base text-emerald-100/80">
+            Add your managers and set the rules for the auction.
           </p>
         </header>
 
-        <form noValidate onSubmit={handleSubmit} className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+        <form noValidate onSubmit={handleSubmit} className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
           <ManagerList
             managers={draft.managers}
             listErrors={listErrors}
@@ -170,15 +170,15 @@ export function SetupScreen({
             addButtonRef={addButtonRef}
           />
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             <section
               aria-labelledby="rules-heading"
-              className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-2xl shadow-black/30 sm:p-7"
+              className="rounded-3xl border border-white/10 bg-white/5 p-4 shadow-2xl shadow-black/30 sm:p-5"
             >
               <h2 id="rules-heading" className="text-2xl font-black tracking-tight">
                 Auction rules
               </h2>
-              <div className="mt-5 grid gap-5 sm:grid-cols-2">
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:gap-3">
                 {SETTING_ORDER.map((field) => (
                   <SettingField
                     key={field}
@@ -187,6 +187,7 @@ export function SetupScreen({
                     hint={SETTING_COPY[field].hint}
                     prefix={SETTING_COPY[field].prefix}
                     suffix={SETTING_COPY[field].suffix}
+                    options={field === "auctionOrder" ? [{ value: "RANDOM", label: "Random order" }, { value: "POSITION", label: "Position order" }] : undefined}
                     value={draft.settings[field]}
                     errors={settingErrors(field)}
                     onChange={(value) => {

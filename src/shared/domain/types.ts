@@ -8,6 +8,8 @@
 
 import type { Position } from "./players/positions";
 
+export type AuctionOrder = "RANDOM" | "POSITION";
+
 // ---------------------------------------------------------------------------
 // Players
 // ---------------------------------------------------------------------------
@@ -48,6 +50,7 @@ export interface GameSettings {
   minimumBid: number;
   bidIncrement: number;
   auctionTimerMs: number;
+  auctionOrder: AuctionOrder;
 }
 
 // ---------------------------------------------------------------------------
@@ -151,7 +154,8 @@ export type GameAction =
   | { type: "TICK" }
   | { type: "PAUSE" }
   | { type: "RESUME" }
-  | { type: "END_GAME" };
+  | { type: "END_GAME" }
+  | { type: "SKIP_PLAYER" };
 
 export type GameActionType = GameAction["type"];
 

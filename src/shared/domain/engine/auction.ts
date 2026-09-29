@@ -9,7 +9,7 @@ import type {
   RandomFn,
 } from "../types";
 import { validateBid } from "./bidding";
-import { selectRandomPlayer } from "./selection";
+import { selectPlayer } from "./selection";
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -26,7 +26,7 @@ interface DrawResult {
  * player is drawn they can never be drawn again, whatever the outcome.
  */
 function drawPlayer(game: Game, random: RandomFn): DrawResult {
-  const playerId = selectRandomPlayer(game.availablePlayerIds, random);
+  const playerId = selectPlayer(game.availablePlayerIds, game.settings, random);
   if (playerId === null) {
     // Unreachable: advanceGame completes the game once the pool is empty.
     throw new Error("Invariant violated: no player left to draw.");

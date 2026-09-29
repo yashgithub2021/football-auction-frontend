@@ -27,11 +27,6 @@ export const PLAYERS: readonly Player[] = [
   // Goalkeepers
   // -------------------------------------------------------------------------
   {
-    id: "lev-yashin", name: "Lev Yashin", primaryPosition: "GK", secondaryPositions: [],
-    nationality: "Soviet Union", era: "1950s–1970s",
-    ratings: { attacking: 1, creativity: 1, defending: 3, physical: 4, technical: 3, sixAsideFit: 4, goalkeeping: 5 },
-  },
-  {
     id: "gianluigi-buffon", name: "Gianluigi Buffon", primaryPosition: "GK", secondaryPositions: [],
     nationality: "Italy", era: "1990s–2020s",
     ratings: { attacking: 1, creativity: 1, defending: 3, physical: 4, technical: 3, sixAsideFit: 4, goalkeeping: 5 },
@@ -57,16 +52,6 @@ export const PLAYERS: readonly Player[] = [
     ratings: { attacking: 1, creativity: 1, defending: 3, physical: 5, technical: 2, sixAsideFit: 4, goalkeeping: 5 },
   },
   {
-    id: "dino-zoff", name: "Dino Zoff", primaryPosition: "GK", secondaryPositions: [],
-    nationality: "Italy", era: "1960s–1980s",
-    ratings: { attacking: 1, creativity: 1, defending: 3, physical: 3, technical: 2, sixAsideFit: 3, goalkeeping: 5 },
-  },
-  {
-    id: "gordon-banks", name: "Gordon Banks", primaryPosition: "GK", secondaryPositions: [],
-    nationality: "England", era: "1950s–1970s",
-    ratings: { attacking: 1, creativity: 1, defending: 3, physical: 4, technical: 2, sixAsideFit: 4, goalkeeping: 5 },
-  },
-  {
     id: "petr-cech", name: "Petr Cech", primaryPosition: "GK", secondaryPositions: [],
     nationality: "Czech Republic", era: "2000s–2010s",
     ratings: { attacking: 1, creativity: 1, defending: 3, physical: 4, technical: 2, sixAsideFit: 3, goalkeeping: 5 },
@@ -75,11 +60,6 @@ export const PLAYERS: readonly Player[] = [
     id: "edwin-van-der-sar", name: "Edwin van der Sar", primaryPosition: "GK", secondaryPositions: [],
     nationality: "Netherlands", era: "1990s–2010s",
     ratings: { attacking: 1, creativity: 3, defending: 3, physical: 3, technical: 4, sixAsideFit: 4, goalkeeping: 5 },
-  },
-  {
-    id: "sepp-maier", name: "Sepp Maier", primaryPosition: "GK", secondaryPositions: [],
-    nationality: "West Germany", era: "1960s–1970s",
-    ratings: { attacking: 1, creativity: 1, defending: 3, physical: 3, technical: 2, sixAsideFit: 4, goalkeeping: 5 },
   },
   {
     id: "thibaut-courtois", name: "Thibaut Courtois", primaryPosition: "GK", secondaryPositions: [],
@@ -100,6 +80,31 @@ export const PLAYERS: readonly Player[] = [
     id: "rene-higuita", name: "Rene Higuita", primaryPosition: "GK", secondaryPositions: [],
     nationality: "Colombia", era: "1980s–2000s",
     ratings: { attacking: 2, creativity: 3, defending: 2, physical: 3, technical: 4, sixAsideFit: 5, goalkeeping: 3 },
+  },
+  {
+    id: "david-de-gea", name: "David de Gea", primaryPosition: "GK", secondaryPositions: [],
+    nationality: "Spain", era: "2000s–2020s",
+    ratings: { attacking: 1, creativity: 1, defending: 3, physical: 4, technical: 3, sixAsideFit: 4, goalkeeping: 5 },
+  },
+  {
+    id: "ederson-moraes", name: "Ederson Moraes", primaryPosition: "GK", secondaryPositions: [],
+    nationality: "Brazil", era: "2010s–2020s",
+    ratings: { attacking: 1, creativity: 4, defending: 3, physical: 4, technical: 5, sixAsideFit: 5, goalkeeping: 5 },
+  },
+  {
+    id: "gianluigi-donnarumma", name: "Gianluigi Donnarumma", primaryPosition: "GK", secondaryPositions: [],
+    nationality: "Italy", era: "2010s–2020s",
+    ratings: { attacking: 1, creativity: 1, defending: 3, physical: 5, technical: 3, sixAsideFit: 4, goalkeeping: 5 },
+  },
+  {
+    id: "emiliano-martinez", name: "Emiliano Martinez", primaryPosition: "GK", secondaryPositions: [],
+    nationality: "Argentina", era: "2010s–2020s",
+    ratings: { attacking: 1, creativity: 2, defending: 4, physical: 5, technical: 3, sixAsideFit: 5, goalkeeping: 5 },
+  },
+  {
+    id: "david-seaman", name: "David Seaman", primaryPosition: "GK", secondaryPositions: [],
+    nationality: "England", era: "1980s–2000s",
+    ratings: { attacking: 1, creativity: 1, defending: 3, physical: 4, technical: 3, sixAsideFit: 4, goalkeeping: 5 },
   },
 
   // -------------------------------------------------------------------------
@@ -139,11 +144,6 @@ export const PLAYERS: readonly Player[] = [
     id: "alessandro-nesta", name: "Alessandro Nesta", primaryPosition: "CB", secondaryPositions: [],
     nationality: "Italy", era: "1990s–2010s",
     ratings: { attacking: 1, creativity: 2, defending: 5, physical: 4, technical: 4, sixAsideFit: 4, goalkeeping: 1 },
-  },
-  {
-    id: "bobby-moore", name: "Bobby Moore", primaryPosition: "CB", secondaryPositions: [],
-    nationality: "England", era: "1950s–1970s",
-    ratings: { attacking: 1, creativity: 3, defending: 5, physical: 3, technical: 4, sixAsideFit: 4, goalkeeping: 1 },
   },
   {
     id: "carles-puyol", name: "Carles Puyol", primaryPosition: "CB", secondaryPositions: ["RB"],
@@ -260,16 +260,6 @@ export const PLAYERS: readonly Player[] = [
     ratings: { attacking: 3, creativity: 2, defending: 4, physical: 4, technical: 3, sixAsideFit: 3, goalkeeping: 1 },
   },
   {
-    id: "nilton-santos", name: "Nilton Santos", primaryPosition: "LB", secondaryPositions: ["CB"],
-    nationality: "Brazil", era: "1940s–1960s",
-    ratings: { attacking: 3, creativity: 3, defending: 4, physical: 3, technical: 4, sixAsideFit: 4, goalkeeping: 1 },
-  },
-  {
-    id: "djalma-santos", name: "Djalma Santos", primaryPosition: "RB", secondaryPositions: [],
-    nationality: "Brazil", era: "1940s–1960s",
-    ratings: { attacking: 2, creativity: 2, defending: 4, physical: 4, technical: 3, sixAsideFit: 3, goalkeeping: 1 },
-  },
-  {
     id: "carlos-alberto-torres", name: "Carlos Alberto Torres", primaryPosition: "RB", secondaryPositions: ["CB"],
     nationality: "Brazil", era: "1960s–1980s",
     ratings: { attacking: 3, creativity: 3, defending: 4, physical: 4, technical: 4, sixAsideFit: 4, goalkeeping: 1 },
@@ -288,11 +278,6 @@ export const PLAYERS: readonly Player[] = [
     id: "andreas-brehme", name: "Andreas Brehme", primaryPosition: "LB", secondaryPositions: ["LM"],
     nationality: "West Germany", era: "1980s–1990s",
     ratings: { attacking: 3, creativity: 3, defending: 4, physical: 3, technical: 4, sixAsideFit: 4, goalkeeping: 1 },
-  },
-  {
-    id: "trent-alexander-arnold", name: "Trent Alexander-Arnold", primaryPosition: "RB", secondaryPositions: ["CM"],
-    nationality: "England", era: "2010s–2020s",
-    ratings: { attacking: 3, creativity: 5, defending: 3, physical: 3, technical: 4, sixAsideFit: 4, goalkeeping: 1 },
   },
   {
     id: "patrice-evra", name: "Patrice Evra", primaryPosition: "LB", secondaryPositions: ["LWB"],
@@ -463,11 +448,6 @@ export const PLAYERS: readonly Player[] = [
     ratings: { attacking: 4, creativity: 4, defending: 2, physical: 5, technical: 5, sixAsideFit: 4, goalkeeping: 1 },
   },
   {
-    id: "jude-bellingham", name: "Jude Bellingham", primaryPosition: "CM", secondaryPositions: ["CAM"],
-    nationality: "England", era: "2020s",
-    ratings: { attacking: 4, creativity: 4, defending: 3, physical: 5, technical: 4, sixAsideFit: 4, goalkeeping: 1 },
-  },
-  {
     id: "michael-essien", name: "Michael Essien", primaryPosition: "CM", secondaryPositions: ["CDM", "RB"],
     nationality: "Ghana", era: "2000s–2010s",
     ratings: { attacking: 3, creativity: 3, defending: 4, physical: 5, technical: 3, sixAsideFit: 4, goalkeeping: 1 },
@@ -631,11 +611,6 @@ export const PLAYERS: readonly Player[] = [
     ratings: { attacking: 5, creativity: 4, defending: 2, physical: 4, technical: 4, sixAsideFit: 4, goalkeeping: 1 },
   },
   {
-    id: "kylian-mbappe", name: "Kylian Mbappe", primaryPosition: "LW", secondaryPositions: ["ST"],
-    nationality: "France", era: "2010s–2020s",
-    ratings: { attacking: 5, creativity: 4, defending: 1, physical: 5, technical: 5, sixAsideFit: 4, goalkeeping: 1 },
-  },
-  {
     id: "eden-hazard", name: "Eden Hazard", primaryPosition: "LW", secondaryPositions: ["CAM"],
     nationality: "Belgium", era: "2000s–2020s",
     ratings: { attacking: 4, creativity: 5, defending: 1, physical: 3, technical: 5, sixAsideFit: 5, goalkeeping: 1 },
@@ -664,11 +639,6 @@ export const PLAYERS: readonly Player[] = [
     id: "angel-di-maria", name: "Angel Di Maria", primaryPosition: "RW", secondaryPositions: ["LW", "CM"],
     nationality: "Argentina", era: "2000s–2020s",
     ratings: { attacking: 4, creativity: 5, defending: 2, physical: 3, technical: 5, sixAsideFit: 4, goalkeeping: 1 },
-  },
-  {
-    id: "vinicius-junior", name: "Vinicius Junior", primaryPosition: "LW", secondaryPositions: ["ST"],
-    nationality: "Brazil", era: "2010s–2020s",
-    ratings: { attacking: 5, creativity: 4, defending: 1, physical: 4, technical: 5, sixAsideFit: 5, goalkeeping: 1 },
   },
   {
     id: "francisco-gento", name: "Francisco Gento", primaryPosition: "LW", secondaryPositions: ["LM"],
@@ -788,11 +758,6 @@ export const PLAYERS: readonly Player[] = [
     id: "dennis-bergkamp", name: "Dennis Bergkamp", primaryPosition: "CF", secondaryPositions: ["CAM", "ST"],
     nationality: "Netherlands", era: "1980s–2000s",
     ratings: { attacking: 5, creativity: 5, defending: 1, physical: 3, technical: 5, sixAsideFit: 5, goalkeeping: 1 },
-  },
-  {
-    id: "erling-haaland", name: "Erling Haaland", primaryPosition: "ST", secondaryPositions: [],
-    nationality: "Norway", era: "2010s–2020s",
-    ratings: { attacking: 5, creativity: 2, defending: 1, physical: 5, technical: 3, sixAsideFit: 3, goalkeeping: 1 },
   },
   {
     id: "wayne-rooney", name: "Wayne Rooney", primaryPosition: "ST", secondaryPositions: ["CF", "CAM"],

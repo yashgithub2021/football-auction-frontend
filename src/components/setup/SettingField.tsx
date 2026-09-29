@@ -10,16 +10,17 @@ interface SettingFieldProps {
   errors: readonly string[];
   onChange: (value: string) => void;
   onBlur: () => void;
+  options?: readonly { value: string; label: string }[];
 }
 
-export function SettingField({ id, label, hint, value, prefix, suffix, errors, onChange, onBlur }: SettingFieldProps) {
+export function SettingField({ id, label, hint, value, prefix, suffix, errors, onChange, onBlur, options }: SettingFieldProps) {
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
   const invalid = errors.length > 0;
 
   return (
     <div>
-      <label htmlFor={id} className="text-sm font-bold tracking-wide text-emerald-100 uppercase">
+      <label htmlFor={id} className="block truncate text-xs font-bold tracking-wide text-emerald-100 uppercase sm:text-sm">
         {label}
       </label>
       <div
@@ -32,25 +33,39 @@ export function SettingField({ id, label, hint, value, prefix, suffix, errors, o
             {prefix}
           </span>
         )}
-        <input
-          id={id}
-          type="number"
-          inputMode="numeric"
-          step={1}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          onBlur={onBlur}
-          aria-invalid={invalid}
-          aria-describedby={invalid ? `${hintId} ${errorId}` : hintId}
-          className="w-full min-w-0 bg-transparent px-3 py-3 text-3xl font-black text-white tabular-nums outline-none"
-        />
+        {options === undefined ? (
+          <input
+            id={id}
+            type="number"
+            inputMode="numeric"
+            step={1}
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            onBlur={onBlur}
+            aria-invalid={invalid}
+            aria-describedby={invalid ? `${hintId} ${errorId}` : hintId}
+            className="w-full min-w-0 bg-transparent px-2 py-2 text-2xl font-black text-white tabular-nums outline-none sm:px-3 sm:py-3 sm:text-3xl"
+          />
+        ) : (
+          <select
+            id={id}
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            onBlur={onBlur}
+            aria-invalid={invalid}
+            aria-describedby={invalid ? `${hintId} ${errorId}` : hintId}
+            className="w-full min-w-0 bg-transparent px-2 py-2 text-base font-black text-white outline-none sm:px-3 sm:py-3 sm:text-xl"
+          >
+            {options.map((option) => <option key={option.value} value={option.value} className="bg-emerald-950">{option.label}</option>)}
+          </select>
+        )}
         {suffix !== undefined && (
           <span aria-hidden="true" className="pr-4 text-lg font-bold text-emerald-400">
             {suffix}
           </span>
         )}
       </div>
-      <p id={hintId} className="mt-2 text-sm text-emerald-200/70">
+      <p id={hintId} className="mt-1 text-xs leading-snug text-emerald-200/70 sm:mt-2 sm:text-sm">
         {hint}
       </p>
       {invalid && (

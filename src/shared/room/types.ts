@@ -107,6 +107,7 @@ export type ParticipantAction =
   | { type: "PAUSE"; actorId: string }
   | { type: "RESUME_AUCTION"; actorId: string }
   | { type: "END_GAME"; actorId: string }
+  | { type: "SKIP_PLAYER"; actorId: string }
   /** Host, after the game is over: back to the lobby with the same people and settings. */
   | { type: "NEW_AUCTION"; actorId: string }
   /** Host, while the auction is paused: which positions the remaining-players list shows. */

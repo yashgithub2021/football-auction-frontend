@@ -317,6 +317,7 @@ export class RoomClient {
   pause = () => this.command("game:pause", {});
   resumeAuction = () => this.command("game:resume", {});
   endGame = () => this.command("game:end", {});
+  skipPlayer = () => this.command("game:skip", {});
   /** Host, after the game: back to the lobby with the same people. The server decides if that's allowed. */
   newAuction = () => this.command("game:newAuction", {});
   /** Host, while paused: which positions the remaining-players list shows. The server authorizes and broadcasts it. */

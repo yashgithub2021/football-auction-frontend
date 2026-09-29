@@ -52,11 +52,13 @@ export function HostHeaderControls({ game, live }: HostHeaderControlsProps) {
   const pause = useRequest(client.pause);
   const resume = useRequest(client.resumeAuction);
   const end = useRequest(client.endGame);
+  const skip = useRequest(client.skipPlayer);
   const [confirmingEnd, setConfirmingEnd] = useState(false);
-  const error = [pause, resume, end].find((request) => request.error !== null)?.error ?? null;
+  const error = [pause, resume, end, skip].find((request) => request.error !== null)?.error ?? null;
 
   const paused = game.status === "PAUSED";
   const canPause = live && game.status === "AUCTION_ACTIVE";
+  const canSkip = live && game.status === "AUCTION_ACTIVE";
 
   return (
     <section aria-label="Host controls" className="flex flex-wrap items-center gap-2">
@@ -85,6 +87,18 @@ export function HostHeaderControls({ game, live }: HostHeaderControlsProps) {
           <PauseIcon />
         </button>
       )}
+
+      <button
+        type="button"
+        aria-label="Skip player"
+        title={canSkip ? "Skip this player" : "Skip is available while bidding"}
+        aria-disabled={!canSkip}
+        aria-busy={skip.pending}
+        onClick={() => canSkip && void skip.run()}
+        className={`${ICON_BUTTON} ${canSkip ? "border-amber-300/70 text-amber-200 hover:bg-amber-300/20" : "border-white/10 text-white/30"}`}
+      >
+        <span aria-hidden="true" className="text-xs font-black uppercase">Skip</span>
+      </button>
 
       {confirmingEnd ? (
         <span role="group" aria-label="Confirm end game" className="flex items-center gap-2 rounded-full border border-rose-400/60 bg-rose-500/10 py-1 pr-1 pl-3">

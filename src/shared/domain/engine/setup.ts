@@ -13,7 +13,7 @@ import {
 import { ALL_PLAYER_IDS, PLAYERS_BY_ID } from "../players/players";
 import type { CreateGameResult, Game, GameSettings, Manager, SetupError } from "../types";
 
-const SETTING_LABELS: Readonly<Record<keyof GameSettings, string>> = {
+const NUMERIC_SETTING_LABELS: Readonly<Record<Exclude<keyof GameSettings, "auctionOrder">, string>> = {
   startingBudget: "Starting budget",
   teamSize: "Team size",
   minimumBid: "Minimum bid",
@@ -21,7 +21,7 @@ const SETTING_LABELS: Readonly<Record<keyof GameSettings, string>> = {
   auctionTimerMs: "Auction timer",
 };
 
-const SETTING_KEYS = Object.keys(SETTING_LABELS) as Array<keyof GameSettings>;
+const NUMERIC_SETTING_KEYS = Object.keys(NUMERIC_SETTING_LABELS) as Array<Exclude<keyof GameSettings, "auctionOrder">>;
 
 function isPositiveInteger(value: number): boolean {
   return Number.isInteger(value) && value > 0;
@@ -42,12 +42,20 @@ export function validateSettings(
 ): SetupError[] {
   const errors: SetupError[] = [];
 
-  for (const key of SETTING_KEYS) {
+  for (const key of NUMERIC_SETTING_KEYS) {
     if (!isPositiveInteger(settings[key])) {
       errors.push({
         code: "INVALID_SETTING",
         field: key,
-        message: `${SETTING_LABELS[key]} must be a whole number greater than 0.`,
+        message: `${NUMERIC_SETTING_LABELS[key]} must be a whole number greater than 0.`,
+      });
+    }
+
+    if (settings.auctionOrder !== "RANDOM" && settings.auctionOrder !== "POSITION") {
+      errors.push({
+        code: "INVALID_SETTING",
+        field: "auctionOrder",
+        message: "Auction order must be Random or Position order.",
       });
     }
   }

@@ -69,7 +69,7 @@ function manager(index: number, name: string, playerNames: readonly string[]): M
 function sampleResults(managers: readonly ManagerResult[], endReason: GameResults["endReason"] = "COMPLETED"): GameResults {
   return {
     endReason,
-    settings: { startingBudget: 100, teamSize: 6, minimumBid: 1, bidIncrement: 1, auctionTimerMs: 3000 },
+    settings: { startingBudget: 100, teamSize: 6, minimumBid: 1, bidIncrement: 1, auctionTimerMs: 3000, auctionOrder: "RANDOM" },
     statistics: { lotsCompleted: 12, playersSold: 12, playersUnsold: 0, lotsInterrupted: 0, totalBids: 30, totalSpent: 114, averagePrice: 9.5, highestSale: { lotNumber: 1, playerName: "Messi", managerName: "Yash", amount: 12 } },
     managers,
     lots: [],

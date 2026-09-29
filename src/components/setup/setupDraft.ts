@@ -22,6 +22,7 @@ export const EDITABLE_SETTINGS = [
   "minimumBid",
   "bidIncrement",
   "auctionTimerMs",
+  "auctionOrder",
 ] as const;
 
 export type EditableSetting = (typeof EDITABLE_SETTINGS)[number];
@@ -72,6 +73,7 @@ export function settingsToInputs(settings: EditableSettings): Record<EditableSet
     minimumBid: String(settings.minimumBid),
     bidIncrement: String(settings.bidIncrement),
     auctionTimerMs: String(settings.auctionTimerMs / MS_PER_SECOND),
+    auctionOrder: settings.auctionOrder,
   };
 }
 
@@ -132,6 +134,7 @@ export function inputsToSettings(inputs: SettingInputs): EditableSettings {
     minimumBid: parseSettingInput(inputs.minimumBid),
     bidIncrement: parseSettingInput(inputs.bidIncrement),
     auctionTimerMs: parseSettingInput(inputs.auctionTimerMs) * MS_PER_SECOND,
+    auctionOrder: inputs.auctionOrder === "POSITION" ? "POSITION" : "RANDOM",
   };
 }
 
